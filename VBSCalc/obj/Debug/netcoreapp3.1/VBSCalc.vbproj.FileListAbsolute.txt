@@ -1,0 +1,17 @@
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.vbproj.AssemblyReference.cache
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.frmDate.resources
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.frmMain.resources
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.vbproj.GenerateResource.cache
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.AssemblyInfoInputs.cache
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.AssemblyInfo.vb
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.vbproj.CoreCompileInputs.cache
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.exe
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.deps.json
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.runtimeconfig.json
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.runtimeconfig.dev.json
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.dll
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\bin\Debug\netcoreapp3.1\VBSCalc.pdb
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.dll
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.pdb
+C:\Users\Andre\source\repos\VBSCalc\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.genruntimeconfig.cache
