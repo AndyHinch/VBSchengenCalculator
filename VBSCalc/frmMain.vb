@@ -5,7 +5,7 @@ Public Class frmMain
     Private _MaximumDaysInArea As Integer = 90
     Private _ReviewDaysInAreas As Integer = 180
 
-    Private Sub btnAdd_Click(sender As Object, e As EventArgs) Handles btnAdd.Click
+    Private Sub btnAdd_Click(sender As Object, e As EventArgs)
 
         Dim f As New frmDate
 
@@ -45,7 +45,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnEdit_Click(sender As Object, e As EventArgs) Handles btnEdit.Click
+    Private Sub btnEdit_Click(sender As Object, e As EventArgs)
 
         If lstDates.SelectedIndex = -1 Then
             Exit Sub
@@ -71,7 +71,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub lstDates_SelectedIndexChanged(sender As Object, e As EventArgs) Handles lstDates.SelectedIndexChanged
+    Private Sub lstDates_SelectedIndexChanged(sender As Object, e As EventArgs)
 
         If lstDates.SelectedIndex <> -1 Then
             btnEdit.Enabled = True
@@ -95,7 +95,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnPredict_Click(sender As Object, e As EventArgs) Handles btnPredict.Click
+    Private Sub btnPredict_Click(sender As Object, e As EventArgs)
 
         Dim sc As New SchengenCalculator(_TripDates, _MaximumDaysInArea, _ReviewDaysInAreas)
         Dim MinDate As Date = _TripDates.MinDate
@@ -128,7 +128,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+    Private Sub btnSave_Click(sender As Object, e As EventArgs)
 
         Dim json As String = _TripDates.toJson()
 
@@ -140,7 +140,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
+    Private Sub btnLoad_Click(sender As Object, e As EventArgs)
 
         Dim json As String
 
@@ -156,7 +156,7 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnDelete_Click(sender As Object, e As EventArgs) Handles btnDelete.Click
+    Private Sub btnDelete_Click(sender As Object, e As EventArgs)
 
 
         If lstDates.SelectedIndex = -1 Then
@@ -171,15 +171,15 @@ Public Class frmMain
 
     End Sub
 
-    Private Sub btnNew_Click(sender As Object, e As EventArgs) Handles btnNew.Click
+    Private Sub btnNew_Click(sender As Object, e As EventArgs)
 
-        _TripDates.RemoveAll
+        _TripDates.RemoveAll()
 
         LoadTripDates()
 
     End Sub
 
-    Private Sub btnAbout_Click(sender As Object, e As EventArgs) Handles btnAbout.Click
+    Private Sub btnAbout_Click(sender As Object, e As EventArgs)
 
         MessageBox.Show("Schengen Calculator" & vbCrLf &
                         "© " & Today.Year.ToString & " Andrew Hinchcliffe" & vbCrLf &
@@ -187,6 +187,10 @@ Public Class frmMain
                         "All rights reserved" & vbCrLf &
                         "You are free to distribute this application" & vbCrLf &
                         "Version : " & Application.ProductVersion.ToString, "Schengen Calculator")
+
+    End Sub
+
+    Private Sub Panel1_Paint(sender As Object, e As PaintEventArgs) Handles Panel1.Paint
 
     End Sub
 End Class
