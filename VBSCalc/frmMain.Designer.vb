@@ -31,8 +31,8 @@ Partial Class frmMain
         Me.TabControl1 = New System.Windows.Forms.TabControl()
         Me.TabPage2 = New System.Windows.Forms.TabPage()
         Me.Panel1 = New System.Windows.Forms.Panel()
-        Me.Label2 = New System.Windows.Forms.Label()
-        Me.lstDates = New System.Windows.Forms.ListBox()
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.lstPredictions = New System.Windows.Forms.ListBox()
         Me.btnAbout = New System.Windows.Forms.Button()
         Me.btnNew = New System.Windows.Forms.Button()
         Me.btnLoad = New System.Windows.Forms.Button()
@@ -41,11 +41,11 @@ Partial Class frmMain
         Me.btnDelete = New System.Windows.Forms.Button()
         Me.btnEdit = New System.Windows.Forms.Button()
         Me.btnAdd = New System.Windows.Forms.Button()
-        Me.Label1 = New System.Windows.Forms.Label()
-        Me.lstPredictions = New System.Windows.Forms.ListBox()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.lstDates = New System.Windows.Forms.ListBox()
         Me.TabPage1 = New System.Windows.Forms.TabPage()
-        Me.MonthCalendar1 = New System.Windows.Forms.MonthCalendar()
         Me.txtDateDescription = New System.Windows.Forms.TextBox()
+        Me.MonthCalendar1 = New System.Windows.Forms.MonthCalendar()
         Me.TabControl1.SuspendLayout()
         Me.TabPage2.SuspendLayout()
         Me.Panel1.SuspendLayout()
@@ -132,23 +132,24 @@ Partial Class frmMain
         Me.Panel1.Size = New System.Drawing.Size(792, 396)
         Me.Panel1.TabIndex = 0
         '
-        'Label2
+        'Label1
         '
-        Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(21, 7)
-        Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(293, 20)
-        Me.Label2.TabIndex = 12
-        Me.Label2.Text = "Dates Entering and Leaving Schengen Area"
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(453, 7)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(199, 20)
+        Me.Label1.TabIndex = 25
+        Me.Label1.Text = "Remaining Dates Predictions"
         '
-        'lstDates
+        'lstPredictions
         '
-        Me.lstDates.FormattingEnabled = True
-        Me.lstDates.ItemHeight = 20
-        Me.lstDates.Location = New System.Drawing.Point(21, 33)
-        Me.lstDates.Name = "lstDates"
-        Me.lstDates.Size = New System.Drawing.Size(292, 344)
-        Me.lstDates.TabIndex = 11
+        Me.lstPredictions.FormattingEnabled = True
+        Me.lstPredictions.ItemHeight = 20
+        Me.lstPredictions.Location = New System.Drawing.Point(453, 33)
+        Me.lstPredictions.Margin = New System.Windows.Forms.Padding(3, 4, 3, 4)
+        Me.lstPredictions.Name = "lstPredictions"
+        Me.lstPredictions.Size = New System.Drawing.Size(327, 344)
+        Me.lstPredictions.TabIndex = 24
         '
         'btnAbout
         '
@@ -229,24 +230,23 @@ Partial Class frmMain
         Me.btnAdd.Text = "&Add"
         Me.btnAdd.UseVisualStyleBackColor = True
         '
-        'Label1
+        'Label2
         '
-        Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(453, 7)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(199, 20)
-        Me.Label1.TabIndex = 25
-        Me.Label1.Text = "Remaining Dates Predictions"
+        Me.Label2.AutoSize = True
+        Me.Label2.Location = New System.Drawing.Point(21, 7)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(293, 20)
+        Me.Label2.TabIndex = 12
+        Me.Label2.Text = "Dates Entering and Leaving Schengen Area"
         '
-        'lstPredictions
+        'lstDates
         '
-        Me.lstPredictions.FormattingEnabled = True
-        Me.lstPredictions.ItemHeight = 20
-        Me.lstPredictions.Location = New System.Drawing.Point(453, 33)
-        Me.lstPredictions.Margin = New System.Windows.Forms.Padding(3, 4, 3, 4)
-        Me.lstPredictions.Name = "lstPredictions"
-        Me.lstPredictions.Size = New System.Drawing.Size(327, 344)
-        Me.lstPredictions.TabIndex = 24
+        Me.lstDates.FormattingEnabled = True
+        Me.lstDates.ItemHeight = 20
+        Me.lstDates.Location = New System.Drawing.Point(21, 33)
+        Me.lstDates.Name = "lstDates"
+        Me.lstDates.Size = New System.Drawing.Size(292, 344)
+        Me.lstDates.TabIndex = 11
         '
         'TabPage1
         '
@@ -257,14 +257,8 @@ Partial Class frmMain
         Me.TabPage1.Padding = New System.Windows.Forms.Padding(3)
         Me.TabPage1.Size = New System.Drawing.Size(816, 396)
         Me.TabPage1.TabIndex = 2
-        Me.TabPage1.Text = "TabPage1"
+        Me.TabPage1.Text = "Month View"
         Me.TabPage1.UseVisualStyleBackColor = True
-        '
-        'MonthCalendar1
-        '
-        Me.MonthCalendar1.Location = New System.Drawing.Point(15, 21)
-        Me.MonthCalendar1.Name = "MonthCalendar1"
-        Me.MonthCalendar1.TabIndex = 0
         '
         'txtDateDescription
         '
@@ -274,6 +268,14 @@ Partial Class frmMain
         Me.txtDateDescription.ReadOnly = True
         Me.txtDateDescription.Size = New System.Drawing.Size(256, 97)
         Me.txtDateDescription.TabIndex = 1
+        '
+        'MonthCalendar1
+        '
+        Me.MonthCalendar1.CalendarDimensions = New System.Drawing.Size(3, 1)
+        Me.MonthCalendar1.Location = New System.Drawing.Point(15, 21)
+        Me.MonthCalendar1.MaxSelectionCount = 1
+        Me.MonthCalendar1.Name = "MonthCalendar1"
+        Me.MonthCalendar1.TabIndex = 0
         '
         'frmMain
         '

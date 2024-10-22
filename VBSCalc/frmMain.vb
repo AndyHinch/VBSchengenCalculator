@@ -37,6 +37,13 @@ Public Class frmMain
 
     End Sub
 
+    Public Sub PopuateMonthView()
+
+        MonthCalendar1.add.
+
+
+    End Sub
+
     Private Sub frmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
         dtpReviewDate.Value = Today
@@ -191,6 +198,29 @@ Public Class frmMain
     End Sub
 
     Private Sub Panel1_Paint(sender As Object, e As PaintEventArgs) Handles Panel1.Paint
+
+    End Sub
+
+    Private Sub TabPage1_Click(sender As Object, e As EventArgs) Handles TabPage1.Click
+
+    End Sub
+
+    Private Sub MonthCalendar1_Click(sender As Object, e As EventArgs) Handles MonthCalendar1.Click
+
+
+        Dim sc As New SchengenCalculator(_TripDates, _MaximumDaysInArea, _ReviewDaysInAreas)
+        Dim DaysInArea As Integer = sc.NumberOfDaysInAreaOnDay(MonthCalendar1.SelectionStart)
+        Dim DaysRemaining As Integer = _MaximumDaysInArea - DaysInArea
+
+        If DaysRemaining >= 0 Then
+            txtDateDescription.Text = DaysInArea.ToString & " used, " & DaysRemaining.ToString & " remaining"
+        Else
+            txtDateDescription.Text = DaysInArea.ToString & " used, " & (DaysRemaining * -1).ToString & " over!"
+        End If
+
+    End Sub
+
+    Private Sub MonthCalendar1_Paint(sender As Object, e As PaintEventArgs) Handles MonthCalendar1.Paint
 
     End Sub
 End Class
