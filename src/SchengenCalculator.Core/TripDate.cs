@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SchengenCalculator.Models;
+namespace SchengenCalculator.Core.Models;
 
 public class TripDate
 {

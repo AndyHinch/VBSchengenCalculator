@@ -304,6 +304,66 @@ code {
     color: #c02d76;
 }
 
+/* ─── Auth bar ─── */
+.auth-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.4rem 0.75rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.auth-greeting { display: flex; align-items: center; gap: 0.4rem; }
+.auth-anon { font-size: 0.85rem; }
+
+/* ─── Auth modal ─── */
+.auth-modal { width: 400px; max-width: 95vw; }
+.auth-tabs { display: flex; border-bottom: 2px solid #dee2e6; }
+.auth-tab {
+    flex: 1;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-weight: 500;
+    color: #6c757d;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.auth-tab.active { color: #1a365d; border-bottom-color: #1a365d; }
+.auth-tab:hover:not(.active) { color: #343a40; }
+
+.auth-tier-info {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.88rem;
+}
+.tier-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.2rem 0; }
+
+/* ─── Tier badges ─── */
+.tier-badge {
+    display: inline-block;
+    border-radius: 12px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+.tier-badge.free, .tier-badge.Free      { background: #d1e7dd; color: #0f5132; }
+.tier-badge.paid, .tier-badge.Paid      { background: #fff3cd; color: #664d03; }
+.tier-badge.anon, .tier-badge.Anonymous { background: #e9ecef; color: #495057; }
+
+/* ─── Trip limit banner ─── */
+.trip-limit-banner { border-radius: 0.4rem; font-size: 0.9rem; }
+
 /* ─── Profile bar ─── */
 .profile-bar {
     display: flex;

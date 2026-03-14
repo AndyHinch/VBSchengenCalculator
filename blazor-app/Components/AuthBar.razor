@@ -1,0 +1,28 @@
+@inject AuthService AuthService
+
+<div class="auth-bar">
+    @if (AuthService.IsAuthenticated)
+    {
+        <span class="auth-greeting">
+            👤 <strong>@AuthService.CurrentUser!.DisplayName</strong>
+            <span class="tier-badge @AuthService.Tier.ToString().ToLower()">
+                @AuthService.Tier.ToString()
+            </span>
+        </span>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="Logout">Sign out</button>
+    }
+    else
+    {
+        <span class="auth-anon text-muted small">
+            Not signed in — <strong>@AppConfig.AnonymousTripLimit trips</strong> max.
+        </span>
+        <button class="btn btn-sm btn-primary" @onclick="OpenAuth">Sign In / Register</button>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback OnShowAuth { get; set; }
+
+    private async Task OpenAuth() => await OnShowAuth.InvokeAsync();
+    private async Task Logout()   => await AuthService.LogoutAsync();
+}

@@ -1,11 +1,22 @@
 @page "/"
 @inject IJSRuntime JSRuntime
 @inject ProfileService ProfileService
+@inject AuthService AuthService
+@inject TripApiService TripApiService
 @implements IDisposable
 
 <PageTitle>Schengen Calculator</PageTitle>
 
 <div class="app-container">
+
+    @* ── Auth bar ── *@
+    <AuthBar OnShowAuth="() => showAuthModal = true" />
+
+    @* ── Trip limit banner ── *@
+    <TripLimitBanner TripCount="trips.Count" OnRegisterClick="() => showAuthModal = true" />
+
+    @* ── Auth modal ── *@
+    <AuthModal Visible="showAuthModal" OnClose="HandleAuthClosed" />
 
     @* ── Profile bar ── *@
     <ProfileSwitcher OnIcalExport="ExportIcal" OnPrint="PrintSummary" />
@@ -94,6 +105,7 @@
 @code {
     private List<TripDate> trips = [];
     private bool showForm;
+    private bool showAuthModal;
     private TripDate? editingTrip;
     private DateTime formStart = DateTime.Today;
     private DateTime formEnd = DateTime.Today.AddDays(14);
@@ -103,8 +115,17 @@
     {
         if (!firstRender) return;
 
-        await ProfileService.EnsureInitialisedAsync();
-        trips = ProfileService.ActiveProfile?.Trips ?? [];
+        await AuthService.InitialiseAsync();
+
+        if (AuthService.IsAuthenticated)
+        {
+            trips = await TripApiService.GetTripsAsync();
+        }
+        else
+        {
+            await ProfileService.EnsureInitialisedAsync();
+            trips = ProfileService.ActiveProfile?.Trips ?? [];
+        }
 
         var theme = await JSRuntime.InvokeAsync<string>("getTheme");
         isDark = theme == "dark";
@@ -115,6 +136,30 @@
     protected override void OnInitialized()
     {
         ProfileService.OnChanged += HandleProfileChanged;
+        AuthService.OnAuthChanged += HandleAuthChanged;
+    }
+
+    private void HandleAuthChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            if (AuthService.IsAuthenticated)
+                trips = await TripApiService.GetTripsAsync();
+            else
+            {
+                await ProfileService.EnsureInitialisedAsync();
+                trips = ProfileService.ActiveProfile?.Trips ?? [];
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async Task HandleAuthClosed()
+    {
+        showAuthModal = false;
+        if (AuthService.IsAuthenticated)
+            trips = await TripApiService.GetTripsAsync();
+        StateHasChanged();
     }
 
     private void HandleProfileChanged()
@@ -123,9 +168,17 @@
         InvokeAsync(StateHasChanged);
     }
 
-    public void Dispose() => ProfileService.OnChanged -= HandleProfileChanged;
+    public void Dispose()
+    {
+        ProfileService.OnChanged -= HandleProfileChanged;
+        AuthService.OnAuthChanged -= HandleAuthChanged;
+    }
 
-    private async Task PersistTrips() => await ProfileService.SaveTripsAsync(trips);
+    private async Task PersistTrips()
+    {
+        if (AuthService.IsAuthenticated) return; // API handles persistence
+        await ProfileService.SaveTripsAsync(trips);
+    }
 
     // ── Dark mode ──────────────────────────────────────────────────────────
 
@@ -139,6 +192,11 @@
 
     private void ShowAddForm()
     {
+        if (trips.Count >= AuthService.TripLimit)
+        {
+            showAuthModal = !AuthService.IsAuthenticated;
+            return;
+        }
         editingTrip = null;
         formStart = DateTime.Today;
         formEnd = DateTime.Today.AddDays(14);
@@ -156,10 +214,30 @@
     private async Task HandleFormSave(
         (DateTime Start, DateTime End, string? DepCode, string? ArrCode, string? Country) result)
     {
-        if (editingTrip is not null)
-            trips.RemoveAll(t => t.StartDate == editingTrip.StartDate);
+        var newTrip = new TripDate(result.Start, result.End, result.DepCode, result.ArrCode, result.Country);
 
-        trips.Add(new TripDate(result.Start, result.End, result.DepCode, result.ArrCode, result.Country));
+        if (AuthService.IsAuthenticated)
+        {
+            if (editingTrip?.ApiId is Guid existingId)
+            {
+                await TripApiService.UpdateTripAsync(existingId, newTrip);
+                trips.RemoveAll(t => t.ApiId == existingId);
+                newTrip.ApiId = existingId;
+            }
+            else
+            {
+                var saved = await TripApiService.AddTripAsync(newTrip);
+                if (saved is not null) newTrip = saved;
+            }
+        }
+        else
+        {
+            if (editingTrip is not null)
+                trips.RemoveAll(t => t.StartDate == editingTrip.StartDate);
+        }
+
+        trips.Add(newTrip);
+        trips = [.. trips.OrderBy(t => t.StartDate)];
         showForm = false;
         editingTrip = null;
         await PersistTrips();
@@ -169,11 +247,19 @@
 
     private async Task DeleteTrip(TripDate trip)
     {
+        if (AuthService.IsAuthenticated && trip.ApiId.HasValue)
+            await TripApiService.DeleteTripAsync(trip.ApiId.Value);
         trips.RemoveAll(t => t.StartDate == trip.StartDate);
         await PersistTrips();
     }
 
-    private async Task ClearAllTrips() { trips.Clear(); await PersistTrips(); }
+    private async Task ClearAllTrips()
+    {
+        if (AuthService.IsAuthenticated)
+            await TripApiService.DeleteAllTripsAsync();
+        trips.Clear();
+        await PersistTrips();
+    }
 
     // ── File save / load ───────────────────────────────────────────────────
 

@@ -1,0 +1,115 @@
+@inject AuthService AuthService
+
+@if (Visible)
+{
+    <div class="modal-backdrop" @onclick="HandleBackdropClick">
+        <div class="modal-box auth-modal" @onclick:stopPropagation="true">
+            @* Tab switcher *@
+            <div class="auth-tabs mb-3">
+                <button class="auth-tab @(mode == AuthMode.Login ? "active" : "")"
+                        @onclick='() => SwitchMode(AuthMode.Login)'>Sign In</button>
+                <button class="auth-tab @(mode == AuthMode.Register ? "active" : "")"
+                        @onclick='() => SwitchMode(AuthMode.Register)'>Create Account</button>
+            </div>
+
+            @if (mode == AuthMode.Login)
+            {
+                <h2>Welcome back</h2>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" @bind="email" placeholder="you@example.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" @bind="password" />
+                </div>
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger py-2 mb-2">@error</div>
+                }
+                <div class="modal-actions gap-2">
+                    <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                    <button class="btn btn-primary" @onclick="DoLogin" disabled="@busy">
+                        @(busy ? "Signing in…" : "Sign In")
+                    </button>
+                </div>
+            }
+            else if (mode == AuthMode.Register)
+            {
+                <h2>Create your free account</h2>
+                <div class="auth-tier-info mb-3">
+                    <div class="tier-row">
+                        <span class="tier-badge free">Free account</span>
+                        <span>Up to <strong>10 trips</strong>, cloud sync across devices</span>
+                    </div>
+                    <div class="tier-row">
+                        <span class="tier-badge anon">No account</span>
+                        <span>Up to <strong>4 trips</strong>, local storage only</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Display name</label>
+                    <input type="text" class="form-control" @bind="displayName" placeholder="Your name" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" @bind="email" placeholder="you@example.com" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password <small class="text-muted">(min. 8 characters, must include a digit)</small></label>
+                    <input type="password" class="form-control" @bind="password" />
+                </div>
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <div class="alert alert-danger py-2 mb-2">@error</div>
+                }
+                <div class="modal-actions gap-2">
+                    <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                    <button class="btn btn-primary" @onclick="DoRegister" disabled="@busy">
+                        @(busy ? "Creating account…" : "Create Free Account")
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private enum AuthMode { Login, Register }
+    private AuthMode mode = AuthMode.Register;
+
+    private string email = "", password = "", displayName = "", error = "";
+    private bool busy;
+
+    private void SwitchMode(AuthMode m) { mode = m; error = ""; }
+
+    private async Task DoLogin()
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        { error = "Please enter your email and password."; return; }
+
+        busy = true; error = "";
+        var err = await AuthService.LoginAsync(new(email, password));
+        busy = false;
+        if (err is not null) { error = err; return; }
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task DoRegister()
+    {
+        if (string.IsNullOrWhiteSpace(displayName) || string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        { error = "Please fill in all fields."; return; }
+
+        busy = true; error = "";
+        var err = await AuthService.RegisterAsync(new(email, password, displayName));
+        busy = false;
+        if (err is not null) { error = err; return; }
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task Cancel() => await OnClose.InvokeAsync();
+    private void HandleBackdropClick() { } // Closed only via Cancel button to avoid accidental dismissal
+}
