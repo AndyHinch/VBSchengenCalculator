@@ -52,6 +52,8 @@
     <TripForm InitialStart="formStart"
               InitialEnd="formEnd"
               IsEdit="editingTrip is not null"
+              InitialDepartureCode="editingTrip?.DepartureAirport"
+              InitialArrivalCode="editingTrip?.ArrivalAirport"
               OnSave="HandleFormSave"
               OnCancel="HideForm" />
 }
@@ -65,7 +67,6 @@
     private DateTime formStart = DateTime.Today;
     private DateTime formEnd = DateTime.Today.AddDays(14);
 
-    // Load from localStorage after first render (JS interop requires the browser to be ready)
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -80,7 +81,7 @@
                     trips = [.. td.Entries];
                     StateHasChanged();
                 }
-                catch { /* ignore corrupt data */ }
+                catch { }
             }
         }
     }
@@ -110,12 +111,13 @@
         showForm = true;
     }
 
-    private async Task HandleFormSave((DateTime Start, DateTime End) result)
+    private async Task HandleFormSave(
+        (DateTime Start, DateTime End, string? DepCode, string? ArrCode, string? Country) result)
     {
         if (editingTrip is not null)
             trips.RemoveAll(t => t.StartDate == editingTrip.StartDate);
 
-        trips.Add(new TripDate(result.Start, result.End));
+        trips.Add(new TripDate(result.Start, result.End, result.DepCode, result.ArrCode, result.Country));
         showForm = false;
         editingTrip = null;
         await PersistToLocalStorage();
@@ -157,6 +159,6 @@
             trips = [.. td.Entries];
             await PersistToLocalStorage();
         }
-        catch { /* handle corrupt file silently */ }
+        catch { }
     }
 }

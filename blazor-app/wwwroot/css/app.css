@@ -64,6 +64,21 @@ html, body {
 .trip-item:hover { background: #f8f9fa; }
 .trip-item.selected { background: #cfe2ff; color: #0d47a1; font-weight: 600; }
 
+.trip-dates { display: block; }
+.trip-route {
+    display: block;
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 1px;
+}
+.trip-item.selected .trip-route { color: #084298; }
+
+.custom-airport-form {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
 .btn-group-row {
     display: flex;
     flex-wrap: wrap;

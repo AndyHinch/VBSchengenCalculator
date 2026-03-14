@@ -11,7 +11,11 @@
             {
                 <li class="trip-item @(selected == trip ? "selected" : "")"
                     @onclick="() => selected = trip">
-                    @trip.ToString()
+                    <span class="trip-dates">@trip.ToString()</span>
+                    @if (!string.IsNullOrEmpty(trip.RouteDisplay))
+                    {
+                        <span class="trip-route">@trip.RouteDisplay</span>
+                    }
                 </li>
             }
         </ul>

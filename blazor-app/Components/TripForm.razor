@@ -1,17 +1,20 @@
+@inject AirportService AirportService
+
 <div class="modal-backdrop">
     <div class="modal-box trip-form-box">
-        <h2>@(isEdit ? "Edit Trip" : "Add Trip")</h2>
+        <h2>@(IsEdit ? "Edit Trip" : "Add Trip")</h2>
 
+        @* Date range picker *@
         <MudDateRangePicker Label="Select trip dates"
                             DateRange="dateRange"
                             DateRangeChanged="HandleRangeChanged"
                             PickerVariant="PickerVariant.Inline"
                             AutoClose="true"
                             DateFormat="dd/MM/yyyy"
-                            Class="mb-3" />
+                            Class="mb-2" />
 
         <div class="quick-label">Quick end date from start:</div>
-        <div class="quick-buttons">
+        <div class="quick-buttons mb-3">
             <button class="btn btn-sm btn-outline-primary" @onclick="() => SetDuration(7)">1 week</button>
             <button class="btn btn-sm btn-outline-primary" @onclick="() => SetDuration(14)">2 weeks</button>
             <button class="btn btn-sm btn-outline-primary" @onclick="() => SetDuration(21)">3 weeks</button>
@@ -23,15 +26,87 @@
         @if (dateRange?.Start != null && dateRange?.End != null)
         {
             var days = (int)(dateRange.End.Value - dateRange.Start.Value).TotalDays + 1;
-            <div class="duration-badge mt-2">
+            <div class="duration-badge mb-3">
                 @dateRange.Start.Value.ToString("d MMM yyyy") – @dateRange.End.Value.ToString("d MMM yyyy")
-                &nbsp;·&nbsp; <strong>@days day@(days == 1 ? "" : "s")</strong>
+                &nbsp;·&nbsp;<strong>@days day@(days == 1 ? "" : "s")</strong>
+            </div>
+        }
+
+        <hr class="my-2" />
+
+        @* Airport pickers *@
+        <div class="row g-2 mb-2">
+            <div class="col-12">
+                <MudAutocomplete T="Airport"
+                                 Label="🇬🇧 Departure airport (UK)"
+                                 Placeholder="Type code or name, e.g. LHR or Heathrow"
+                                 Value="departureAirport"
+                                 ValueChanged="HandleDepartureChanged"
+                                 SearchFunc="AirportService.SearchUkAsync"
+                                 ToStringFunc="@(a => a?.DisplayName ?? "")"
+                                 ResetValueOnEmptyText="true"
+                                 Clearable="true"
+                                 Variant="Variant.Outlined"
+                                 Dense="true" />
+            </div>
+            <div class="col-12">
+                <MudAutocomplete T="Airport"
+                                 Label="🛬 Arrival airport (Schengen)"
+                                 Placeholder="Type code or name, e.g. BCN or Barcelona"
+                                 Value="arrivalAirport"
+                                 ValueChanged="HandleArrivalChanged"
+                                 SearchFunc="AirportService.SearchSchengenAsync"
+                                 ToStringFunc="@(a => a?.DisplayName ?? "")"
+                                 ResetValueOnEmptyText="true"
+                                 Clearable="true"
+                                 Variant="Variant.Outlined"
+                                 Dense="true" />
+            </div>
+        </div>
+
+        @* Add custom airport *@
+        <button class="btn btn-link btn-sm px-0 mb-2" @onclick="ToggleCustomForm">
+            @(showCustomForm ? "▲ Hide" : "▼ Can't find your airport? Add it")
+        </button>
+
+        @if (showCustomForm)
+        {
+            <div class="custom-airport-form p-2 mb-2">
+                <div class="row g-2">
+                    <div class="col-3">
+                        <label class="form-label form-label-sm mb-1">IATA Code</label>
+                        <input class="form-control form-control-sm text-uppercase" maxlength="3"
+                               placeholder="e.g. XYZ" @bind="newCode" />
+                    </div>
+                    <div class="col-9">
+                        <label class="form-label form-label-sm mb-1">Airport Name</label>
+                        <input class="form-control form-control-sm" placeholder="e.g. Alghero Fertilia"
+                               @bind="newName" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label form-label-sm mb-1">City</label>
+                        <input class="form-control form-control-sm" placeholder="e.g. Alghero"
+                               @bind="newCity" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label form-label-sm mb-1">Country</label>
+                        <input class="form-control form-control-sm" placeholder="e.g. Italy"
+                               @bind="newCountry" />
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(customError))
+                {
+                    <p class="text-danger small mt-1 mb-0">@customError</p>
+                }
+                <button class="btn btn-sm btn-outline-success mt-2" @onclick="SaveCustomAirport">
+                    Save Airport
+                </button>
             </div>
         }
 
         @if (!string.IsNullOrEmpty(error))
         {
-            <p class="text-danger mt-2 mb-0">@error</p>
+            <p class="text-danger mt-1 mb-0">@error</p>
         }
 
         <div class="modal-actions mt-3">
@@ -45,18 +120,28 @@
     [Parameter] public DateTime InitialStart { get; set; }
     [Parameter] public DateTime InitialEnd { get; set; }
     [Parameter] public bool IsEdit { get; set; }
-    [Parameter] public EventCallback<(DateTime Start, DateTime End)> OnSave { get; set; }
+    [Parameter] public string? InitialDepartureCode { get; set; }
+    [Parameter] public string? InitialArrivalCode { get; set; }
+    [Parameter] public EventCallback<(DateTime Start, DateTime End, string? DepCode, string? ArrCode, string? Country)> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
     private DateRange? dateRange;
+    private Airport? departureAirport;
+    private Airport? arrivalAirport;
     private string error = "";
-    private bool isEdit;
 
-    protected override void OnParametersSet()
+    // Custom airport form
+    private bool showCustomForm;
+    private string newCode = "", newName = "", newCity = "", newCountry = "";
+    private string customError = "";
+
+    protected override async Task OnParametersSetAsync()
     {
         dateRange = new DateRange(InitialStart, InitialEnd);
-        isEdit = IsEdit;
         error = "";
+        await AirportService.EnsureInitialisedAsync();
+        departureAirport = AirportService.FindByCode(InitialDepartureCode);
+        arrivalAirport   = AirportService.FindByCode(InitialArrivalCode);
     }
 
     private void HandleRangeChanged(DateRange range)
@@ -65,10 +150,32 @@
         error = "";
     }
 
+    private void HandleDepartureChanged(Airport? airport) => departureAirport = airport;
+    private void HandleArrivalChanged(Airport? airport)   => arrivalAirport   = airport;
+
     private void SetDuration(int days)
     {
         var start = dateRange?.Start ?? DateTime.Today;
         dateRange = new DateRange(start, start.AddDays(days - 1));
+    }
+
+    private void ToggleCustomForm()
+    {
+        showCustomForm = !showCustomForm;
+        newCode = newName = newCity = newCountry = customError = "";
+    }
+
+    private async Task SaveCustomAirport()
+    {
+        customError = "";
+        if (newCode.Length != 3)  { customError = "IATA code must be exactly 3 letters."; return; }
+        if (string.IsNullOrWhiteSpace(newName))    { customError = "Name is required."; return; }
+        if (string.IsNullOrWhiteSpace(newCity))    { customError = "City is required."; return; }
+        if (string.IsNullOrWhiteSpace(newCountry)) { customError = "Country is required."; return; }
+
+        await AirportService.AddCustomAsync(new Airport(newCode.ToUpperInvariant(), newName, newCity, newCountry));
+        showCustomForm = false;
+        newCode = newName = newCity = newCountry = "";
     }
 
     private async Task HandleSave()
@@ -83,6 +190,17 @@
             error = "Start date must be before end date.";
             return;
         }
-        await OnSave.InvokeAsync((dateRange.Start.Value.Date, dateRange.End.Value.Date));
+
+        // Record recently-used airports
+        if (departureAirport is not null) await AirportService.RecordDepartureAsync(departureAirport.Code);
+        if (arrivalAirport   is not null) await AirportService.RecordArrivalAsync(arrivalAirport.Code);
+
+        await OnSave.InvokeAsync((
+            dateRange.Start.Value.Date,
+            dateRange.End.Value.Date,
+            departureAirport?.Code,
+            arrivalAirport?.Code,
+            arrivalAirport?.Country
+        ));
     }
 }
