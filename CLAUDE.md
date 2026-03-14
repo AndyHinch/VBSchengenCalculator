@@ -11,7 +11,6 @@ src/
   SchengenCalculator.Api/    ASP.NET Core 8 REST API
   SchengenCalculator.Maui/   .NET MAUI Blazor Hybrid (iOS + Android shell)
 tests/               xUnit tests — run with: dotnet test tests/
-VBSCalc/             Original VB.NET app (reference only, do not edit)
 ```
 
 ## Development Branch
