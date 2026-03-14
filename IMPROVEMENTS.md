@@ -8,6 +8,8 @@
   - .NET 8.0 is an LTS (Long Term Support) release with support until November 2026
   - Benefits: Better performance, security updates, modern features
   - Updated Newtonsoft.Json from 13.0.1 to 13.0.3
+  - **Fixed**: Added `MyType=WindowsForms` for proper VB.NET Windows Forms support
+  - **Fixed**: Corrected `StartupObject` to use fully qualified name `VBSCalc.Main`
 
 ### 2. Performance Optimization ?
 - **SchengenCalculator.NumberOfDaysInAreaOnDay method**
@@ -67,6 +69,13 @@
 - Removed unused code (commented StreamWriter)
 - Removed empty event handler body
 
+## Project Configuration Fixes
+
+### VBSCalc.vbproj
+- Added `MyType=WindowsForms` - Required for VB.NET Windows Forms applications
+- Fixed `StartupObject` from `Sub Main` to `VBSCalc.Main` (fully qualified module name)
+- Removed `Nullable=enable` - Not recommended for VB.NET Windows Forms projects as it can cause runtime issues
+
 ## Testing Recommendations
 
 1. **Test date calculations** with various trip ranges
@@ -95,8 +104,19 @@
 9. **Add unit tests** for calculation logic
 10. **Add configuration** for custom day limits (not just 90/180)
 
-## Build Status
+## Build & Run Status
 ? Successfully builds on .NET 8.0
+? Successfully runs and displays main window
+? Application responds properly to user input
 
 ## Breaking Changes
 None - All changes are backward compatible with existing .tripdata files.
+
+## Resolution of Runtime Issues
+
+The initial deployment had a runtime crash (exit code 0x80008096) which was resolved by:
+1. Removing `Nullable=enable` from project file
+2. Adding `MyType=WindowsForms` property
+3. Correcting the `StartupObject` to fully qualified module name
+
+The application now starts and runs correctly.

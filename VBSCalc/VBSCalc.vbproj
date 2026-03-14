@@ -4,9 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <RootNamespace>VBSCalc</RootNamespace>
-    <StartupObject>Sub Main</StartupObject>
+    <StartupObject>VBSCalc.Main</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
-    <Nullable>enable</Nullable>
+    <MyType>WindowsForms</MyType>
   </PropertyGroup>
 
   <ItemGroup>
