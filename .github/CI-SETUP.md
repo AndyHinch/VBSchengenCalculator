@@ -69,14 +69,29 @@ Three jobs with dependency chain:
 
 **Triggers:** Push, Pull Requests, and manual workflow dispatch
 
+### 3. **dependency-submission.yml** (Automatic)
+
+Submits dependency information for security scanning:
+
+**submit-dependencies (Ubuntu):**
+- Restores **`VBSCalc.CI.sln`** (no MAUI)
+- Generates dependency graph
+- Uploads for GitHub security scanning
+
+**Triggers:** Push to main, master, or develop branches
+
+**Note:** If GitHub's automatic dependency submission fails due to MAUI, see [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for how to disable it and use our custom workflow instead.
+
 ## GitHub Automatic Dependency Submission
 
-GitHub's automatic dependency submission workflow will now work correctly because it restores **`VBSCalc.CI.sln`** by default, which:
-- ? Doesn't require MAUI workloads
-- ? Runs on Linux without errors
-- ? Includes all the dependencies you care about
+GitHub's automatic dependency submission workflow **may fail** if it tries to restore `VBSCalc.sln` (which includes MAUI) on Linux.
 
-The dependency submission workflow looks for `.sln` files and will prefer the one that works. If it fails, it will fall back to individual projects.
+**Solutions:**
+1. ? Use our custom `dependency-submission.yml` workflow (already created)
+2. ? Disable automatic submission in repository settings
+3. ? The CI solution should make it work automatically
+
+See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for detailed instructions.
 
 ## Platform-Specific Requirements
 
@@ -144,14 +159,14 @@ jobs:
 - Restoring it requires MAUI workloads
 - MAUI workloads don't install on Linux
 - GitHub's dependency submission runs on Linux
-- Result: ? Build failures
+- Automatic workflows fail ?
 
 **Solution:**
 - `VBSCalc.CI.sln` excludes MAUI
 - Can restore on any platform
 - Used by CI workflows and dependency submission
 - `VBSCalc.sln` still exists for local Windows dev
-- Result: ? Builds succeed everywhere
+- All workflows succeed ?
 
 ### Job Execution Flow
 
@@ -161,7 +176,9 @@ Push/PR
 ??? Ubuntu: build-and-test (VBSCalc.CI.sln)
 ?   ??? ? Tests, Blazor publish
 ??? Windows: build-maui (MAUI project)
-    ??? ? Android, Windows builds
+?   ??? ? Android, Windows builds
+??? Ubuntu: dependency-submission (VBSCalc.CI.sln)
+    ??? ? Security scanning
 ```
 
 ## Local Development
@@ -215,59 +232,42 @@ error NETSDK1147: To build this project, the following workloads must be install
 Workload installation failed: Workload ID maui isn't supported on this platform.
 ```
 
-**Cause:** Trying to restore `VBSCalc.sln` (which includes MAUI) on a non-Windows runner.
+**Cause:** A workflow is trying to restore `VBSCalc.sln` (which includes MAUI) on a non-Windows runner.
 
-**Solution:** Use `VBSCalc.CI.sln` instead on Linux/macOS:
+**Solutions:**
 
-? **Correct:**
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: dotnet restore VBSCalc.CI.sln  # ? No MAUI
-      - run: dotnet build VBSCalc.CI.sln
-```
+1. **Check which workflow is failing:**
+   - Look at the workflow file name in the error
+   - Check if it's using `VBSCalc.sln` or `VBSCalc.CI.sln`
 
-? **Wrong:**
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - run: dotnet restore VBSCalc.sln  # ? Includes MAUI, will fail!
-```
+2. **If it's our workflow (`ci.yml` or `build.yml`):**
+   - It should already be using `VBSCalc.CI.sln`
+   - If not, that's a bug - please file an issue
+
+3. **If it's GitHub's automatic dependency submission:**
+   - See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md)
+   - Option A: Use our custom `dependency-submission.yml` (already created)
+   - Option B: Disable automatic submission in settings
+
+4. **Quick fix for any workflow:**
+   ```yaml
+   # Use this
+   - run: dotnet restore VBSCalc.CI.sln  # ? Works on Linux
+   
+   # Instead of this
+   - run: dotnet restore VBSCalc.sln     # ? Fails on Linux
+   ```
 
 ### Error: Dependency Submission Failing
 
-If GitHub's automatic dependency submission fails with MAUI workload errors:
+If GitHub's automatic dependency submission fails:
 
 **Cause:** It's trying to restore `VBSCalc.sln` which includes MAUI.
 
-**Solution:** The presence of `VBSCalc.CI.sln` will help. If it still fails, you can:
-
-1. Add a `.github/dependabot.yml` to control dependency scanning
-2. Disable automatic dependency submission and use a custom workflow
-3. The CI solution should make the automatic workflow work
-
-**Custom workflow example:**
-```yaml
-name: Dependency Submission
-on: push
-
-jobs:
-  submit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-      - run: dotnet restore VBSCalc.CI.sln
-      - uses: actions/dependency-submission/dotnet@v3
-        with:
-          solution-path: VBSCalc.CI.sln
-```
+**Solution:** See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for detailed instructions on:
+- Using our custom dependency submission workflow
+- Disabling automatic dependency submission
+- Configuring Dependabot correctly
 
 ### Best Practices
 
@@ -276,8 +276,9 @@ jobs:
 3. ? Use `ubuntu-latest` for non-MAUI jobs (fast, cheap)
 4. ? Use `windows-latest` for MAUI jobs (required)
 5. ? Keep both solution files in sync when adding non-MAUI projects
-6. ? Don't restore `VBSCalc.sln` on Linux
-7. ? Don't try to install MAUI workloads on Linux/macOS
+6. ? Use our custom `dependency-submission.yml` for dependency scanning
+7. ? Don't restore `VBSCalc.sln` on Linux
+8. ? Don't try to install MAUI workloads on Linux/macOS
 
 ### Adding New Projects
 
@@ -311,7 +312,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - run: dotnet restore VBSCalc.CI.sln
+      - run: dotnet restore VBSCalc.CI.sln   # ? CI solution
       - run: dotnet build VBSCalc.CI.sln --no-restore
       - run: dotnet test VBSCalc.CI.sln --no-build
 
@@ -331,4 +332,6 @@ jobs:
 ## See Also
 
 - [Solution Files Documentation](../SOLUTION-FILES.md) - Detailed guide on when to use which solution
+- [Dependency Submission Guide](DEPENDENCY-SUBMISSION.md) - How to handle dependency scanning with MAUI
 - [GitHub Actions Workflows](./) - View the actual workflow files
+- [Dependabot Configuration](dependabot.yml) - Automatic dependency updates

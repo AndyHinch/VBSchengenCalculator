@@ -1,0 +1,34 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: [ main, master, develop ]
+
+permissions:
+  contents: write
+
+jobs:
+  submit-dependencies:
+    name: Submit Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+      
+    - name: Restore CI solution (excludes MAUI)
+      run: dotnet restore VBSCalc.CI.sln
+      
+    - name: Generate dependency graph
+      run: dotnet list VBSCalc.CI.sln package --include-transitive --format json > dependencies.json
+      
+    - name: Upload dependency graph
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-graph
+        path: dependencies.json
