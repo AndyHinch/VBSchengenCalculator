@@ -8,44 +8,60 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate:
-    name: Validate Projects
+  validate-non-maui:
+    name: Validate Non-MAUI Projects
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup .NET with MAUI
-      uses: ./.github/actions/setup-dotnet-maui
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore and validate solution
-      run: dotnet restore ./VBSCalc.sln
+    - name: Restore Blazor
+      run: dotnet restore blazor-app/SchengenCalculator.csproj
       
-  build:
-    name: Build and Test
-    needs: validate
+    - name: Restore Core
+      run: dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
+      
+    - name: Restore API
+      run: dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
+      
+    - name: Restore Tests
+      run: dotnet restore tests/SchengenCalculator.Tests.csproj
+      
+  build-and-test:
+    name: Build and Test (Non-MAUI)
+    needs: validate-non-maui
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup .NET with MAUI
-      uses: ./.github/actions/setup-dotnet-maui
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore ./VBSCalc.sln
+      run: |
+        dotnet restore blazor-app/SchengenCalculator.csproj
+        dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
+        dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
+        dotnet restore tests/SchengenCalculator.Tests.csproj
       
-    - name: Build solution
-      run: dotnet build ./VBSCalc.sln --configuration Release --no-restore
+    - name: Build projects
+      run: |
+        dotnet build blazor-app/SchengenCalculator.csproj --configuration Release --no-restore
+        dotnet build src/SchengenCalculator.Core/SchengenCalculator.Core.csproj --configuration Release --no-restore
+        dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj --configuration Release --no-restore
       
     - name: Run tests
-      run: dotnet test tests/SchengenCalculator.Tests.csproj --configuration Release --no-build --verbosity normal
+      run: dotnet test tests/SchengenCalculator.Tests.csproj --configuration Release --no-restore --verbosity normal
       
     - name: Publish Blazor WebAssembly
       run: dotnet publish blazor-app/SchengenCalculator.csproj --configuration Release --output ./publish/blazor
@@ -55,3 +71,28 @@ jobs:
       with:
         name: blazor-app
         path: ./publish/blazor/wwwroot
+
+  build-maui:
+    name: Build MAUI (Windows)
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Install MAUI workloads
+      run: dotnet workload install maui --skip-sign-check
+      
+    - name: Restore MAUI project
+      run: dotnet restore src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj
+      
+    - name: Build MAUI (Android)
+      run: dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android --configuration Release --no-restore
+      
+    - name: Build MAUI (Windows)
+      run: dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-windows10.0.19041.0 --configuration Release --no-restore

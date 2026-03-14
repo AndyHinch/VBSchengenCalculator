@@ -1,5 +1,5 @@
 name: 'Setup .NET with MAUI'
-description: 'Setup .NET SDK and install MAUI workloads'
+description: 'Setup .NET SDK and install MAUI workloads (Windows only)'
 inputs:
   dotnet-version:
     description: '.NET SDK version to install'
@@ -13,7 +13,17 @@ runs:
       with:
         dotnet-version: ${{ inputs.dotnet-version }}
     
-    - name: Install MAUI workloads
+    - name: Check if Windows
       shell: bash
       run: |
-        dotnet workload install maui --skip-sign-check || dotnet workload install maui-android maui-ios maui-maccatalyst maui-windows --skip-sign-check
+        if [ "$RUNNER_OS" != "Windows" ]; then
+          echo "?? WARNING: MAUI workloads are only supported on Windows runners."
+          echo "This action should only be used on windows-latest or windows-* runners."
+          exit 1
+        fi
+    
+    - name: Install MAUI workloads
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        dotnet workload install maui --skip-sign-check

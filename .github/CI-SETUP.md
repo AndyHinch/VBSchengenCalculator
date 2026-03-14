@@ -1,75 +1,129 @@
 # GitHub Actions CI/CD Setup
 
-This repository includes GitHub Actions workflows for automated building and testing.
+This repository includes GitHub Actions workflows for automated building and testing across different platforms.
+
+## Overview
+
+The solution contains both **cross-platform projects** (Blazor, Core, API) and **MAUI projects** (Android, iOS, Windows, macOS). Since MAUI workloads are **only supported on Windows runners**, the workflows are split into:
+
+1. **Ubuntu jobs** - Fast, cost-effective builds for non-MAUI projects
+2. **Windows jobs** - Required for MAUI project builds
 
 ## Workflows
 
 ### 1. **ci.yml** (Recommended - Simple)
-A simple workflow that:
-- Checks out the code
-- Sets up .NET 9 with MAUI workloads (using composite action)
-- Restores dependencies
-- Builds the entire solution
+
+Two parallel jobs:
+
+**build-non-maui (Ubuntu):**
+- Builds Blazor WebAssembly app
+- Builds Core library
+- Builds API
 - Runs tests
+- Publishes Blazor artifacts
+
+**build-maui (Windows):**
+- Installs MAUI workloads
+- Builds MAUI Android app
+- Builds MAUI Windows app
 
 **Triggers:** Push and Pull Requests to main, master, or develop branches
 
 ### 2. **build.yml** (Detailed with Validation)
-A more detailed workflow with two jobs:
 
-**Validate Job:**
-- Sets up .NET 9 with MAUI workloads
-- Validates the solution can be restored
+Three jobs with dependency chain:
 
-**Build Job:**
-- Sets up .NET 9 with MAUI workloads
-- Builds the entire solution
+**validate-non-maui (Ubuntu):**
+- Validates all non-MAUI projects can restore
+
+**build-and-test (Ubuntu):**
+- Depends on validation
+- Builds all non-MAUI projects
 - Runs tests
-- Publishes the Blazor WebAssembly app
-- Uploads artifacts
+- Publishes Blazor app
+
+**build-maui (Windows):**
+- Runs in parallel with validation
+- Builds MAUI projects for Android and Windows
 
 **Triggers:** Push, Pull Requests, and manual workflow dispatch
 
+## Platform-Specific Requirements
+
+### MAUI Projects (Windows Only)
+
+MAUI workloads are **NOT supported on Linux or macOS** runners. They require:
+- `runs-on: windows-latest`
+- `dotnet workload install maui`
+
+Supported MAUI target frameworks:
+- ? `net9.0-android` - Builds on Windows
+- ? `net9.0-windows` - Builds on Windows
+- ?? `net9.0-ios` - Requires macOS runner (not included in workflows)
+- ?? `net9.0-maccatalyst` - Requires macOS runner (not included in workflows)
+
+### Non-MAUI Projects (Cross-Platform)
+
+These projects build on any platform:
+- ? Blazor WebAssembly (`net9.0`)
+- ? Core library (`net9.0`)
+- ? API (`net9.0`)
+- ? Tests (`net9.0`)
+
 ## Composite Actions
 
-### setup-dotnet-maui
+### setup-dotnet-maui (?? Windows Only)
 Located in `.github/actions/setup-dotnet-maui/action.yml`
 
-This reusable composite action:
+**IMPORTANT:** This action only works on `windows-latest` or `windows-*` runners.
+
+This composite action:
 - Sets up the .NET SDK
-- Installs all MAUI workloads (`maui-android`, `maui-ios`, `maui-maccatalyst`, `maui-windows`)
-- Handles installation fallback if the grouped install fails
+- Validates it's running on Windows
+- Installs all MAUI workloads
+- Fails fast if used on non-Windows runners
 
 **Usage:**
 ```yaml
-- name: Setup .NET with MAUI
-  uses: ./.github/actions/setup-dotnet-maui
-  with:
-    dotnet-version: '9.0.x'
+jobs:
+  build-maui:
+    runs-on: windows-latest  # ? REQUIRED
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET with MAUI
+        uses: ./.github/actions/setup-dotnet-maui
+        with:
+          dotnet-version: '9.0.x'
 ```
 
-## MAUI Workload Requirements
+**? Don't do this:**
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest  # ? WRONG! MAUI doesn't work on Linux
+    steps:
+      - uses: ./.github/actions/setup-dotnet-maui  # ? Will fail
+```
 
-The MAUI project requires the following workloads to be installed:
-- `maui-android` - For Android support
-- `maui-ios` - For iOS support
-- `maui-maccatalyst` - For macOS Catalyst support
-- `maui-windows` - For Windows support
+## Workflow Strategy
 
-**Important:** These workloads MUST be installed BEFORE any `dotnet restore` or `dotnet build` commands that touch the MAUI project or solution file.
+### Why Split Jobs?
 
-## How the Workflows Handle MAUI
+1. **Performance**: Ubuntu runners are faster and cheaper than Windows for cross-platform .NET builds
+2. **Compatibility**: MAUI workloads only install on Windows
+3. **Parallelization**: Non-MAUI and MAUI builds run simultaneously
+4. **Cost Efficiency**: Only MAUI jobs use Windows runners (which cost more)
 
-The workflows use a composite action (`.github/actions/setup-dotnet-maui`) that:
+### Job Execution Flow
 
-1. Sets up the .NET SDK
-2. Immediately installs MAUI workloads using:
-   ```bash
-   dotnet workload install maui --skip-sign-check
-   ```
-3. Falls back to individual workload installation if needed
-
-This ensures MAUI workloads are available before any project validation, restoration, or build steps.
+```mermaid
+graph TD
+    A[Push/PR] --> B[validate-non-maui<br/>Ubuntu]
+    A --> C[build-maui<br/>Windows]
+    B --> D[build-and-test<br/>Ubuntu]
+    D --> E[Tests Pass ?]
+    C --> F[MAUI Builds ?]
+```
 
 ## Local Development
 
@@ -79,54 +133,125 @@ To set up your local environment:
 # Install .NET 9 SDK
 # Download from: https://dotnet.microsoft.com/download/dotnet/9.0
 
-# Install MAUI workloads
+# For MAUI development (Windows only):
 dotnet workload install maui
 
-# Restore dependencies
-dotnet restore
+# Restore all projects:
+dotnet restore blazor-app/SchengenCalculator.csproj
+dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
+dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
+dotnet restore tests/SchengenCalculator.Tests.csproj
 
-# Build
-dotnet build
+# For MAUI (Windows only):
+dotnet restore src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj
 
-# Run tests
-dotnet test
+# Build non-MAUI projects (any platform):
+dotnet build blazor-app/SchengenCalculator.csproj
+dotnet build src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
+dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
+
+# Build MAUI (Windows only):
+dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android
+
+# Run tests:
+dotnet test tests/SchengenCalculator.Tests.csproj
 ```
 
 ## Projects in Solution
 
-1. **SchengenCalculator (Blazor WebAssembly)** - Web application
-2. **SchengenCalculator.Core** - Core business logic
-3. **SchengenCalculator.Api** - Backend API
-4. **SchengenCalculator.Maui** - Mobile/Desktop app (Android, iOS, macOS, Windows)
-5. **SchengenCalculator.Tests** - Unit tests
+1. **SchengenCalculator (Blazor WebAssembly)** - Web application _(builds on any OS)_
+2. **SchengenCalculator.Core** - Core business logic _(builds on any OS)_
+3. **SchengenCalculator.Api** - Backend API _(builds on any OS)_
+4. **SchengenCalculator.Maui** - Mobile/Desktop app _(requires Windows for build)_
+5. **SchengenCalculator.Tests** - Unit tests _(runs on any OS)_
 
 ## Troubleshooting CI Builds
 
-### Error: NETSDK1147 - MAUI workloads not installed
+### Error: NETSDK1147 - MAUI workloads not supported
 
 If you see:
 ```
 error NETSDK1147: To build this project, the following workloads must be installed: maui-android
+Workload installation failed: Workload ID maui isn't supported on this platform.
 ```
 
-**Cause:** The MAUI workloads were not installed before trying to restore/build the solution.
+**Cause:** Trying to install MAUI workloads or build MAUI projects on a non-Windows runner (Ubuntu/macOS).
 
-**Solution:** Ensure your workflow:
-1. Uses the `setup-dotnet-maui` composite action, OR
-2. Manually installs workloads BEFORE any restore/build steps:
-   ```yaml
-   - name: Install MAUI workloads
-     run: dotnet workload install maui --skip-sign-check
-   ```
+**Solution:** Ensure MAUI-related steps only run on Windows:
 
-### Workload Installation Order
+? **Correct:**
+```yaml
+jobs:
+  build-maui:
+    runs-on: windows-latest
+    steps:
+      - name: Install MAUI
+        run: dotnet workload install maui
+```
 
-The correct order in a workflow is:
-1. ? Checkout code
-2. ? Setup .NET SDK
-3. ? **Install MAUI workloads** ? MUST be here
-4. ? Restore dependencies
-5. ? Build
-6. ? Test
+? **Wrong:**
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest  # ? Problem!
+    steps:
+      - name: Install MAUI
+        run: dotnet workload install maui  # ? Will fail
+```
 
-**Never** try to restore or build before installing MAUI workloads!
+### Error: Can't restore VBSCalc.sln on Linux
+
+If restoring the full solution (`VBSCalc.sln`) fails on Ubuntu:
+
+**Cause:** The solution includes the MAUI project which requires MAUI workloads.
+
+**Solution:** Restore individual non-MAUI projects instead:
+```yaml
+- name: Restore non-MAUI projects
+  run: |
+    dotnet restore blazor-app/SchengenCalculator.csproj
+    dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
+    dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
+    dotnet restore tests/SchengenCalculator.Tests.csproj
+```
+
+### Best Practices
+
+1. ? Use `ubuntu-latest` for non-MAUI projects (Blazor, Core, API, Tests)
+2. ? Use `windows-latest` for MAUI projects
+3. ? Use separate jobs with specific runners
+4. ? Restore individual projects instead of the full solution on non-Windows runners
+5. ? Don't try to install MAUI workloads on Linux/macOS
+6. ? Don't restore `VBSCalc.sln` on Linux (it includes MAUI)
+
+### Workflow Template
+
+```yaml
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  # Fast cross-platform builds on Ubuntu
+  build-non-maui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - run: dotnet restore blazor-app/SchengenCalculator.csproj
+      - run: dotnet build blazor-app/SchengenCalculator.csproj --no-restore
+      # ... more non-MAUI projects
+
+  # MAUI builds on Windows
+  build-maui:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - run: dotnet workload install maui --skip-sign-check
+      - run: dotnet restore src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj
+      - run: dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android --no-restore
