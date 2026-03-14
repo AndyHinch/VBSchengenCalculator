@@ -1,7 +1,21 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TripDate } from './lib/tripDate';
 import { TripDates } from './lib/tripDates';
 import { SchengenCalculator } from './lib/schengenCalculator';
+
+const STORAGE_KEY = 'schengen_trips';
+
+function loadFromStorage(): TripDate[] {
+  try {
+    const json = localStorage.getItem(STORAGE_KEY);
+    if (!json) return [];
+    const td = new TripDates();
+    td.loadFromJson(json);
+    return td.entries;
+  } catch {
+    return [];
+  }
+}
 import TripList from './components/TripList';
 import TripForm from './components/TripForm';
 import Calculator from './components/Calculator';
@@ -12,9 +26,16 @@ const MAX_DAYS = 90;
 const REVIEW_PERIOD = 180;
 
 export default function App() {
-  const [trips, setTrips] = useState<TripDate[]>([]);
+  const [trips, setTrips] = useState<TripDate[]>(loadFromStorage);
   const [showForm, setShowForm] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripDate | null>(null);
+
+  // Persist to localStorage whenever trips change
+  useEffect(() => {
+    const td = new TripDates();
+    trips.forEach((t) => td.addEntry(t));
+    localStorage.setItem(STORAGE_KEY, td.toJson());
+  }, [trips]);
 
   // Build TripDates and SchengenCalculator from current trips array
   const tripDates = useMemo(() => {
