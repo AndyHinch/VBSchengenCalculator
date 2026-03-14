@@ -1,0 +1,52 @@
+<div class="modal-backdrop">
+    <div class="modal-box">
+        <h2>Trip Dates</h2>
+
+        <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" class="form-control" @bind="startDate" />
+        </div>
+        <div class="form-group mt-2">
+            <label>End Date</label>
+            <input type="date" class="form-control" @bind="endDate" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p class="text-danger mt-2">@error</p>
+        }
+
+        <div class="modal-actions mt-3">
+            <button class="btn btn-primary" @onclick="HandleSave">OK</button>
+            <button class="btn btn-secondary ms-2" @onclick="OnCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public DateTime InitialStart { get; set; }
+    [Parameter] public DateTime InitialEnd { get; set; }
+    [Parameter] public EventCallback<(DateTime Start, DateTime End)> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private DateTime startDate;
+    private DateTime endDate;
+    private string error = "";
+
+    protected override void OnParametersSet()
+    {
+        startDate = InitialStart;
+        endDate = InitialEnd;
+        error = "";
+    }
+
+    private async Task HandleSave()
+    {
+        if (startDate >= endDate)
+        {
+            error = "Start date must be before end date.";
+            return;
+        }
+        await OnSave.InvokeAsync((startDate, endDate));
+    }
+}

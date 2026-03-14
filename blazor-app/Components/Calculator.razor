@@ -1,0 +1,37 @@
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Calculate Days</h5>
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <label class="mb-0">Review Date</label>
+            <input type="date" class="form-control w-auto" @bind="reviewDate" />
+            <button class="btn btn-primary" @onclick="Calculate">Calculate</button>
+        </div>
+
+        @if (result is not null)
+        {
+            <div class="alert @(isOver ? "alert-danger" : "alert-success") mt-3 mb-0">
+                @result
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+
+    private DateTime reviewDate = DateTime.Today;
+    private string? result;
+    private bool isOver;
+
+    private void Calculate()
+    {
+        var calc = new SchengenCalc(Trips);
+        int used = calc.NumberOfDaysInAreaOnDay(reviewDate);
+        int remaining = 90 - used;
+        isOver = remaining < 0;
+        result = isOver
+            ? $"{used} used, {Math.Abs(remaining)} over!"
+            : $"{used} used, {remaining} remaining";
+    }
+}

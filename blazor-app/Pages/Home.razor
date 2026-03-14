@@ -1,0 +1,151 @@
+@page "/"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Schengen Calculator</PageTitle>
+
+<div class="app-container">
+    <header class="app-header text-center py-4">
+        <h1>Schengen Calculator</h1>
+        <p class="text-muted">Track your 90-day / 180-day Schengen visa-free allowance</p>
+    </header>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <TripList Trips="trips"
+                      OnAdd="ShowAddForm"
+                      OnEdit="ShowEditForm"
+                      OnDelete="DeleteTrip"
+                      OnClearAll="ClearAllTrips"
+                      OnSave="SaveToFile"
+                      OnLoadJson="LoadFromJson" />
+        </div>
+        <div class="col-md-6">
+            <CalendarView Trips="trips" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <Calculator Trips="trips" />
+    </div>
+
+    <div class="mb-3">
+        <Predictions Trips="trips" />
+    </div>
+
+    <footer class="text-center text-muted py-3">
+        <small>© @DateTime.Now.Year Andrew Hinchcliffe — MIT License</small>
+    </footer>
+</div>
+
+@if (showForm)
+{
+    <TripForm InitialStart="formStart"
+              InitialEnd="formEnd"
+              OnSave="HandleFormSave"
+              OnCancel="HideForm" />
+}
+
+@code {
+    private const string StorageKey = "schengen_trips";
+
+    private List<TripDate> trips = [];
+    private bool showForm;
+    private TripDate? editingTrip;
+    private DateTime formStart = DateTime.Today;
+    private DateTime formEnd = DateTime.Today.AddDays(14);
+
+    // Load from localStorage after first render (JS interop requires the browser to be ready)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var json = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    var td = new TripDates();
+                    td.LoadFromJson(json);
+                    trips = [.. td.Entries];
+                    StateHasChanged();
+                }
+                catch { /* ignore corrupt data */ }
+            }
+        }
+    }
+
+    private async Task PersistToLocalStorage()
+    {
+        var td = new TripDates();
+        foreach (var t in trips) td.AddEntry(t);
+        await JSRuntime.InvokeVoidAsync("localStorage.setItem", StorageKey, td.ToJson());
+    }
+
+    // ---- Trip CRUD ----
+
+    private void ShowAddForm()
+    {
+        editingTrip = null;
+        formStart = DateTime.Today;
+        formEnd = DateTime.Today.AddDays(14);
+        showForm = true;
+    }
+
+    private void ShowEditForm(TripDate trip)
+    {
+        editingTrip = trip;
+        formStart = trip.StartDate;
+        formEnd = trip.EndDate;
+        showForm = true;
+    }
+
+    private async Task HandleFormSave((DateTime Start, DateTime End) result)
+    {
+        if (editingTrip is not null)
+            trips.RemoveAll(t => t.StartDate == editingTrip.StartDate);
+
+        trips.Add(new TripDate(result.Start, result.End));
+        showForm = false;
+        editingTrip = null;
+        await PersistToLocalStorage();
+    }
+
+    private void HideForm()
+    {
+        showForm = false;
+        editingTrip = null;
+    }
+
+    private async Task DeleteTrip(TripDate trip)
+    {
+        trips.RemoveAll(t => t.StartDate == trip.StartDate);
+        await PersistToLocalStorage();
+    }
+
+    private async Task ClearAllTrips()
+    {
+        trips.Clear();
+        await PersistToLocalStorage();
+    }
+
+    // ---- File save / load ----
+
+    private async Task SaveToFile()
+    {
+        var td = new TripDates();
+        foreach (var t in trips) td.AddEntry(t);
+        await JSRuntime.InvokeVoidAsync("downloadFile", "trips.tripdata", td.ToJson());
+    }
+
+    private async Task LoadFromJson(string json)
+    {
+        try
+        {
+            var td = new TripDates();
+            td.LoadFromJson(json);
+            trips = [.. td.Entries];
+            await PersistToLocalStorage();
+        }
+        catch { /* handle corrupt file silently */ }
+    }
+}

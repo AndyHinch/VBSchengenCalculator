@@ -1,0 +1,104 @@
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Calendar View</h5>
+        <p class="text-muted small mb-2">Click a date to see days used.</p>
+
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="PrevMonth">&#8249;</button>
+            <strong>@monthName @viewYear</strong>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="NextMonth">&#8250;</button>
+        </div>
+
+        <div class="cal-grid">
+            @foreach (var day in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+            {
+                <div class="cal-header">@day</div>
+            }
+            @foreach (var cell in BuildCells())
+            {
+                @if (cell is null)
+                {
+                    <div class="cal-cell empty"></div>
+                }
+                else
+                {
+                    var date = cell.Value;
+                    <div class="cal-cell @CellClass(date)" @onclick="() => SelectDay(date)">
+                        @date.Day
+                    </div>
+                }
+            }
+        </div>
+
+        @if (selectedInfo is not null)
+        {
+            <div class="alert @(selectedOver ? "alert-danger" : "alert-success") mt-2 mb-0 py-2 small">
+                @selectedDate?.ToShortDateString(): @selectedInfo
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+
+    private int viewYear = DateTime.Today.Year;
+    private int viewMonth = DateTime.Today.Month;
+    private DateTime? selectedDate;
+    private string? selectedInfo;
+    private bool selectedOver;
+
+    private string monthName => new DateTime(viewYear, viewMonth, 1).ToString("MMMM");
+
+    private void PrevMonth()
+    {
+        if (viewMonth == 1) { viewMonth = 12; viewYear--; }
+        else viewMonth--;
+    }
+
+    private void NextMonth()
+    {
+        if (viewMonth == 12) { viewMonth = 1; viewYear++; }
+        else viewMonth++;
+    }
+
+    private IEnumerable<DateTime?> BuildCells()
+    {
+        var first = new DateTime(viewYear, viewMonth, 1);
+        int daysInMonth = DateTime.DaysInMonth(viewYear, viewMonth);
+
+        // Leading empty cells
+        for (int i = 0; i < (int)first.DayOfWeek; i++)
+            yield return null;
+
+        for (int d = 1; d <= daysInMonth; d++)
+            yield return new DateTime(viewYear, viewMonth, d);
+
+        // Trailing empty cells to complete last row
+        int total = (int)first.DayOfWeek + daysInMonth;
+        int trailing = total % 7 == 0 ? 0 : 7 - (total % 7);
+        for (int i = 0; i < trailing; i++)
+            yield return null;
+    }
+
+    private string CellClass(DateTime date)
+    {
+        var classes = new List<string>();
+        if (date.Date == DateTime.Today.Date) classes.Add("today");
+        if (selectedDate.HasValue && date.Date == selectedDate.Value.Date) classes.Add("selected");
+        if (Trips.Any(t => t.WasInAreaOnDate(date))) classes.Add("in-area");
+        return string.Join(" ", classes);
+    }
+
+    private void SelectDay(DateTime date)
+    {
+        selectedDate = date;
+        var calc = new SchengenCalc(Trips);
+        int used = calc.NumberOfDaysInAreaOnDay(date);
+        int remaining = 90 - used;
+        selectedOver = remaining < 0;
+        selectedInfo = selectedOver
+            ? $"{used} used, {Math.Abs(remaining)} over!"
+            : $"{used} used, {remaining} remaining";
+    }
+}

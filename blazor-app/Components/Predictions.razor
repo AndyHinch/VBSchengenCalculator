@@ -1,0 +1,61 @@
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Monthly Predictions</h5>
+
+        <button class="btn btn-primary" @onclick="Generate">Generate Predictions</button>
+
+        @if (predictions.Count > 0)
+        {
+            <ul class="predictions-list mt-3">
+                @foreach (var p in predictions)
+                {
+                    <li class="@(p.Remaining < 0 ? "pred-over" : "pred-ok")">
+                        <strong>@p.Date.ToShortDateString()</strong>
+                        @if (p.Remaining >= 0)
+                        {
+                            <span> : @p.Used used, @p.Remaining remaining</span>
+                        }
+                        else
+                        {
+                            <span> : @p.Used used, @Math.Abs(p.Remaining) over!</span>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+
+    private record Prediction(DateTime Date, int Used, int Remaining);
+    private List<Prediction> predictions = [];
+
+    private void Generate()
+    {
+        predictions.Clear();
+        if (Trips.Count == 0) return;
+
+        var calc = new SchengenCalc(Trips);
+        var td = new TripDates();
+        foreach (var t in Trips) td.AddEntry(t);
+
+        // Start at beginning of the month containing the earliest trip
+        var minDate = new DateTime(td.MinDate().Year, td.MinDate().Month, 1);
+
+        // End 180 days past the month after the latest trip
+        var maxDate = new DateTime(td.MaxDate().Year, td.MaxDate().Month, 1)
+            .AddMonths(1)
+            .AddDays(180);
+        maxDate = new DateTime(maxDate.Year, maxDate.Month, 1);
+
+        var current = minDate;
+        while (current <= maxDate)
+        {
+            int used = calc.NumberOfDaysInAreaOnDay(current);
+            predictions.Add(new Prediction(current, used, 90 - used));
+            current = current.AddMonths(1);
+        }
+    }
+}
