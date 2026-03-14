@@ -21,11 +21,11 @@ jobs:
       with:
         dotnet-version: '9.0.x'
       
-    - name: Restore CI solution (excludes MAUI)
-      run: dotnet restore VBSCalc.CI.sln
+    - name: Restore solution (excludes MAUI)
+      run: dotnet restore VBSCalc.sln
       
     - name: Generate dependency graph
-      run: dotnet list VBSCalc.CI.sln package --include-transitive --format json > dependencies.json
+      run: dotnet list VBSCalc.sln package --include-transitive --format json > dependencies.json
       
     - name: Upload dependency graph
       uses: actions/upload-artifact@v4

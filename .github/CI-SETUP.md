@@ -6,27 +6,30 @@ This repository includes GitHub Actions workflows for automated building and tes
 
 The solution contains both **cross-platform projects** (Blazor, Core, API) and **MAUI projects** (Android, iOS, Windows, macOS). Since MAUI workloads are **only supported on Windows runners**, the repository uses **two solution files**:
 
-1. **`VBSCalc.sln`** - Full solution with MAUI (for local Windows development)
-2. **`VBSCalc.CI.sln`** - CI solution without MAUI (for Linux/macOS builds and dependency submission)
+1. **`VBSCalc.sln`** - Default solution without MAUI (for CI/CD and cross-platform development)
+2. **`VBSCalc.Full.sln`** - Full solution with MAUI (for local Windows development)
+
+**Important:** `VBSCalc.sln` is the **default** solution that all workflows and third-party tools will use automatically.
 
 This approach:
 - ? Avoids MAUI workload errors on Linux
 - ? Allows GitHub's automatic dependency submission to work
+- ? Third-party GitHub Actions work automatically
 - ? Speeds up CI builds (Ubuntu is faster)
 - ? Reduces costs (Ubuntu runners are cheaper)
 - ? Enables parallel MAUI and non-MAUI builds
 
 ## Solution Files
 
-### VBSCalc.sln (Full - Windows Only)
+### VBSCalc.sln (Default - CI Solution)
+**Contains:** Blazor, Core, API, Tests (no MAUI)  
+**For:** CI/CD, dependency submission, automated builds, third-party workflows  
+**Requires:** Only .NET 9 SDK (works on any OS)
+
+### VBSCalc.Full.sln (Full Solution)
 **Contains:** Blazor, Core, API, **MAUI**, Tests  
 **For:** Local development on Windows  
 **Requires:** MAUI workloads installed
-
-### VBSCalc.CI.sln (CI - Any Platform)
-**Contains:** Blazor, Core, API, Tests (no MAUI)  
-**For:** CI/CD, dependency submission, automated builds  
-**Requires:** Only .NET 9 SDK
 
 See [SOLUTION-FILES.md](../SOLUTION-FILES.md) for detailed information.
 
@@ -37,7 +40,7 @@ See [SOLUTION-FILES.md](../SOLUTION-FILES.md) for detailed information.
 Two parallel jobs:
 
 **build-non-maui (Ubuntu):**
-- Restores and builds **`VBSCalc.CI.sln`**
+- Restores and builds **`VBSCalc.sln`** (default)
 - Runs all tests
 - Publishes Blazor artifacts
 - ? Fast and cost-effective
@@ -55,11 +58,11 @@ Two parallel jobs:
 Three jobs with dependency chain:
 
 **validate-non-maui (Ubuntu):**
-- Validates **`VBSCalc.CI.sln`** can restore
+- Validates **`VBSCalc.sln`** can restore
 
 **build-and-test (Ubuntu):**
 - Depends on validation
-- Builds **`VBSCalc.CI.sln`**
+- Builds **`VBSCalc.sln`**
 - Runs tests
 - Publishes Blazor app
 
@@ -74,24 +77,31 @@ Three jobs with dependency chain:
 Submits dependency information for security scanning:
 
 **submit-dependencies (Ubuntu):**
-- Restores **`VBSCalc.CI.sln`** (no MAUI)
+- Restores **`VBSCalc.sln`** (default, no MAUI)
 - Generates dependency graph
 - Uploads for GitHub security scanning
 
 **Triggers:** Push to main, master, or develop branches
 
-**Note:** If GitHub's automatic dependency submission fails due to MAUI, see [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for how to disable it and use our custom workflow instead.
+## Third-Party Workflows
+
+Third-party GitHub Actions (like dependency submission tools) will automatically use **`VBSCalc.sln`** because:
+- ? It's the alphabetically first `.sln` file (after renaming)
+- ? It doesn't require MAUI workloads
+- ? It works on Linux/Ubuntu runners
+- ? It contains all the important dependencies
+
+**No additional configuration needed!** Third-party workflows should just work now.
 
 ## GitHub Automatic Dependency Submission
 
-GitHub's automatic dependency submission workflow **may fail** if it tries to restore `VBSCalc.sln` (which includes MAUI) on Linux.
+GitHub's automatic dependency submission will now:
+- ? Find `VBSCalc.sln` (the default)
+- ? Restore it successfully on Linux
+- ? Generate dependency graph
+- ? Enable security scanning
 
-**Solutions:**
-1. ? Use our custom `dependency-submission.yml` workflow (already created)
-2. ? Disable automatic submission in repository settings
-3. ? The CI solution should make it work automatically
-
-See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for detailed instructions.
+If you still see failures, see [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for troubleshooting.
 
 ## Platform-Specific Requirements
 
@@ -141,43 +151,32 @@ jobs:
           dotnet-version: '9.0.x'
 ```
 
-**? Don't do this:**
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest  # ? WRONG! MAUI doesn't work on Linux
-    steps:
-      - uses: ./.github/actions/setup-dotnet-maui  # ? Will fail
-```
-
 ## Workflow Strategy
 
-### Why Use Two Solution Files?
+### Why Two Solution Files with VBSCalc.sln as Default?
 
 **Problem:**
-- `VBSCalc.sln` includes MAUI project
-- Restoring it requires MAUI workloads
-- MAUI workloads don't install on Linux
-- GitHub's dependency submission runs on Linux
-- Automatic workflows fail ?
+- Third-party workflows look for `*.sln` files
+- They run on Linux (no MAUI support)
+- If they find a solution with MAUI first, they fail
 
 **Solution:**
-- `VBSCalc.CI.sln` excludes MAUI
-- Can restore on any platform
-- Used by CI workflows and dependency submission
-- `VBSCalc.sln` still exists for local Windows dev
-- All workflows succeed ?
+- `VBSCalc.sln` (no MAUI) is the **primary/default** solution
+- Third-party tools use it automatically
+- It works on all platforms
+- `VBSCalc.Full.sln` is available for Windows/MAUI development
 
 ### Job Execution Flow
 
 ```
-Push/PR
-??? Ubuntu: validate-non-maui (VBSCalc.CI.sln)
-??? Ubuntu: build-and-test (VBSCalc.CI.sln)
+Push/PR or Third-Party Workflow
+??? Discovers VBSCalc.sln (default)
+??? Ubuntu: validate-non-maui (VBSCalc.sln)
+??? Ubuntu: build-and-test (VBSCalc.sln)
 ?   ??? ? Tests, Blazor publish
 ??? Windows: build-maui (MAUI project)
 ?   ??? ? Android, Windows builds
-??? Ubuntu: dependency-submission (VBSCalc.CI.sln)
+??? Ubuntu: dependency-submission (VBSCalc.sln)
     ??? ? Security scanning
 ```
 
@@ -192,15 +191,15 @@ To set up your local environment:
 # For MAUI development (Windows only):
 dotnet workload install maui
 
-# Build everything (Windows):
+# Build everything including MAUI (Windows):
+dotnet restore VBSCalc.Full.sln
+dotnet build VBSCalc.Full.sln
+dotnet test VBSCalc.Full.sln
+
+# Build non-MAUI projects (any platform):
 dotnet restore VBSCalc.sln
 dotnet build VBSCalc.sln
 dotnet test VBSCalc.sln
-
-# Build non-MAUI projects (any platform):
-dotnet restore VBSCalc.CI.sln
-dotnet build VBSCalc.CI.sln
-dotnet test VBSCalc.CI.sln
 
 # Build individual projects:
 dotnet build blazor-app/SchengenCalculator.csproj
@@ -211,7 +210,7 @@ dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
 dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android
 
 # Run tests:
-dotnet test VBSCalc.CI.sln
+dotnet test VBSCalc.sln
 ```
 
 ## Projects in Solution
@@ -229,55 +228,44 @@ dotnet test VBSCalc.CI.sln
 If you see:
 ```
 error NETSDK1147: To build this project, the following workloads must be installed: maui-android
-Workload installation failed: Workload ID maui isn't supported on this platform.
 ```
 
-**Cause:** A workflow is trying to restore `VBSCalc.sln` (which includes MAUI) on a non-Windows runner.
+**This should NOT happen anymore** because `VBSCalc.sln` (the default) doesn't include MAUI.
 
-**Solutions:**
+**If it still happens:**
+1. Check which workflow is failing
+2. Check if it's explicitly using `VBSCalc.Full.sln` (it shouldn't on Linux)
+3. Verify the file was renamed correctly (VBSCalc.CI.sln ? VBSCalc.sln)
 
-1. **Check which workflow is failing:**
-   - Look at the workflow file name in the error
-   - Check if it's using `VBSCalc.sln` or `VBSCalc.CI.sln`
+**Quick fix:**
+```yaml
+# Make sure workflows use the default solution
+- run: dotnet restore VBSCalc.sln  # ? No MAUI
+- run: dotnet build VBSCalc.sln
+```
 
-2. **If it's our workflow (`ci.yml` or `build.yml`):**
-   - It should already be using `VBSCalc.CI.sln`
-   - If not, that's a bug - please file an issue
+### Error: Third-Party Workflow Failing
 
-3. **If it's GitHub's automatic dependency submission:**
-   - See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md)
-   - Option A: Use our custom `dependency-submission.yml` (already created)
-   - Option B: Disable automatic submission in settings
+If a third-party workflow (like "submit-nuget" or similar) fails:
 
-4. **Quick fix for any workflow:**
-   ```yaml
-   # Use this
-   - run: dotnet restore VBSCalc.CI.sln  # ? Works on Linux
-   
-   # Instead of this
-   - run: dotnet restore VBSCalc.sln     # ? Fails on Linux
-   ```
+**Cause:** It's trying to use the wrong solution file.
 
-### Error: Dependency Submission Failing
+**Solution:** The fix is already in place - `VBSCalc.sln` is now the default and doesn't include MAUI.
 
-If GitHub's automatic dependency submission fails:
-
-**Cause:** It's trying to restore `VBSCalc.sln` which includes MAUI.
-
-**Solution:** See [DEPENDENCY-SUBMISSION.md](DEPENDENCY-SUBMISSION.md) for detailed instructions on:
-- Using our custom dependency submission workflow
-- Disabling automatic dependency submission
-- Configuring Dependabot correctly
+**If it persists:**
+1. Check if there are any `.sln` files we don't know about
+2. Verify `VBSCalc.sln` is the one without MAUI
+3. Check the third-party action's configuration
 
 ### Best Practices
 
-1. ? Use `VBSCalc.CI.sln` for CI/CD on Linux/macOS
-2. ? Use `VBSCalc.sln` for local Windows development
+1. ? Use `VBSCalc.sln` for CI/CD (it's the default)
+2. ? Use `VBSCalc.Full.sln` for local Windows/MAUI development
 3. ? Use `ubuntu-latest` for non-MAUI jobs (fast, cheap)
 4. ? Use `windows-latest` for MAUI jobs (required)
 5. ? Keep both solution files in sync when adding non-MAUI projects
-6. ? Use our custom `dependency-submission.yml` for dependency scanning
-7. ? Don't restore `VBSCalc.sln` on Linux
+6. ? Third-party workflows will automatically use the correct solution
+7. ? Don't restore `VBSCalc.Full.sln` on Linux
 8. ? Don't try to install MAUI workloads on Linux/macOS
 
 ### Adding New Projects
@@ -286,14 +274,14 @@ If GitHub's automatic dependency submission fails:
 ```bash
 # Add to BOTH solutions
 dotnet sln VBSCalc.sln add src/NewProject/NewProject.csproj
-dotnet sln VBSCalc.CI.sln add src/NewProject/NewProject.csproj
+dotnet sln VBSCalc.Full.sln add src/NewProject/NewProject.csproj
 ```
 
 **MAUI project:**
 ```bash
 # Add ONLY to full solution
-dotnet sln VBSCalc.sln add src/NewMauiApp/NewMauiApp.csproj
-# Don't add to VBSCalc.CI.sln
+dotnet sln VBSCalc.Full.sln add src/NewMauiApp/NewMauiApp.csproj
+# Don't add to VBSCalc.sln (default)
 ```
 
 ### Workflow Template
@@ -312,9 +300,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - run: dotnet restore VBSCalc.CI.sln   # ? CI solution
-      - run: dotnet build VBSCalc.CI.sln --no-restore
-      - run: dotnet test VBSCalc.CI.sln --no-build
+      - run: dotnet restore VBSCalc.sln      # ? Default (no MAUI)
+      - run: dotnet build VBSCalc.sln --no-restore
+      - run: dotnet test VBSCalc.sln --no-build
 
   # MAUI builds on Windows
   build-maui:
@@ -332,6 +320,6 @@ jobs:
 ## See Also
 
 - [Solution Files Documentation](../SOLUTION-FILES.md) - Detailed guide on when to use which solution
-- [Dependency Submission Guide](DEPENDENCY-SUBMISSION.md) - How to handle dependency scanning with MAUI
+- [Dependency Submission Guide](DEPENDENCY-SUBMISSION.md) - How to handle dependency scanning
 - [GitHub Actions Workflows](./) - View the actual workflow files
 - [Dependabot Configuration](dependabot.yml) - Automatic dependency updates

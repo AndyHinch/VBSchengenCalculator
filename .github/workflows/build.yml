@@ -21,8 +21,8 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore CI solution (excludes MAUI)
-      run: dotnet restore VBSCalc.CI.sln
+    - name: Restore solution (excludes MAUI)
+      run: dotnet restore VBSCalc.sln
       
   build-and-test:
     name: Build and Test (Non-MAUI)
@@ -38,14 +38,14 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore CI solution
-      run: dotnet restore VBSCalc.CI.sln
+    - name: Restore solution
+      run: dotnet restore VBSCalc.sln
       
-    - name: Build CI solution
-      run: dotnet build VBSCalc.CI.sln --configuration Release --no-restore
+    - name: Build solution
+      run: dotnet build VBSCalc.sln --configuration Release --no-restore
       
     - name: Run tests
-      run: dotnet test VBSCalc.CI.sln --configuration Release --no-build --verbosity normal
+      run: dotnet test VBSCalc.sln --configuration Release --no-build --verbosity normal
       
     - name: Publish Blazor WebAssembly
       run: dotnet publish blazor-app/SchengenCalculator.csproj --configuration Release --output ./publish/blazor
