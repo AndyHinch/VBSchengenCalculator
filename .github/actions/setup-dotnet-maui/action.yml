@@ -27,3 +27,11 @@ runs:
       shell: pwsh
       run: |
         dotnet workload install maui --skip-sign-check
+        dotnet workload restore
+
+    - name: Install MAUI workloads
+      if: runner.os == 'android'
+      shell: pwsh
+      run: 
+        dotnet workload install maui-android
+        dotnet workload restore
