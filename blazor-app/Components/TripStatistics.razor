@@ -1,0 +1,106 @@
+@using System.Globalization
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Trip Statistics</h5>
+
+        @if (!Trips.Any())
+        {
+            <p class="text-muted mb-0">Add trips to see statistics.</p>
+        }
+        else
+        {
+            @* Summary row *@
+            <div class="stats-summary mb-3">
+                <div class="stat-pill">
+                    <div class="stat-pill-value">@Trips.Count</div>
+                    <div class="stat-pill-label">Total trips</div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-pill-value">@Trips.Sum(t => t.NumberOfDays())</div>
+                    <div class="stat-pill-label">Total days</div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-pill-value">@countryCount</div>
+                    <div class="stat-pill-label">Countries</div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-pill-value">@avgDays</div>
+                    <div class="stat-pill-label">Avg trip (days)</div>
+                </div>
+            </div>
+
+            @* Days per year bar chart *@
+            @if (yearLabels.Length > 0)
+            {
+                <h6 class="mb-1">Days in Schengen per Year</h6>
+                <MudChart T="double"
+                          ChartType="ChartType.Bar"
+                          ChartSeries="@yearSeries"
+                          ChartLabels="@yearLabels"
+                          Width="100%" Height="200px"
+                          ChartOptions="@chartOptions" />
+            }
+
+            @* Days per country *@
+            @if (byCountry.Count > 0)
+            {
+                <h6 class="mt-3 mb-2">Days by Country</h6>
+                <div class="country-stats">
+                    @foreach (var (country, days) in byCountry.OrderByDescending(x => x.Value))
+                    {
+                        var pct = (double)days / totalDays * 100;
+                        <div class="country-stat-row">
+                            <span class="country-stat-name">@country</span>
+                            <div class="country-stat-bar-wrap">
+                                <div class="country-stat-bar" style="width:@pct.ToString("F1")%"></div>
+                            </div>
+                            <span class="country-stat-days">@days day@(days == 1 ? "" : "s")</span>
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+
+    private int countryCount, avgDays, totalDays;
+    private Dictionary<string, int> byCountry = [];
+    private string[] yearLabels = [];
+    private List<ChartSeries<double>> yearSeries = [];
+    private ChartOptions chartOptions = new();
+
+    protected override void OnParametersSet()
+    {
+        if (!Trips.Any()) return;
+
+        totalDays = Trips.Sum(t => t.NumberOfDays());
+        avgDays   = (int)Math.Round(Trips.Average(t => t.NumberOfDays()));
+
+        byCountry = Trips
+            .Where(t => !string.IsNullOrEmpty(t.Country))
+            .GroupBy(t => t.Country!)
+            .ToDictionary(g => g.Key, g => g.Sum(t => t.NumberOfDays()));
+
+        countryCount = byCountry.Count;
+
+        // Days per year
+        var perYear = Trips
+            .GroupBy(t => t.StartDate.Year)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        yearLabels = perYear.Select(g => g.Key.ToString()).ToArray();
+        yearSeries =
+        [
+            new ChartSeries<double>
+            {
+                Name = "Days in Schengen",
+                Data = perYear.Select(g => (double)g.Sum(t => t.NumberOfDays())).ToArray()
+            }
+        ];
+    }
+}

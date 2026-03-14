@@ -1,0 +1,132 @@
+<div class="card dashboard-card @borderClass">
+    <div class="card-body">
+        <h5 class="card-title">Your Schengen Status Today</h5>
+
+        @if (!hasTrips)
+        {
+            <p class="text-muted mb-0">Add your first trip to see your status here.</p>
+        }
+        else
+        {
+            @* Big numbers row *@
+            <div class="dash-numbers mb-3">
+                <div class="dash-stat">
+                    <div class="dash-big @usedColour">@daysUsed</div>
+                    <div class="dash-label">days used</div>
+                </div>
+                <div class="dash-divider">/</div>
+                <div class="dash-stat">
+                    <div class="dash-big">90</div>
+                    <div class="dash-label">day limit</div>
+                </div>
+                <div class="dash-spacer"></div>
+                <div class="dash-stat text-end">
+                    <div class="dash-big @remainingColour">@Math.Abs(daysRemaining)</div>
+                    <div class="dash-label">@(daysRemaining >= 0 ? "days remaining" : "days over!")</div>
+                </div>
+            </div>
+
+            @* Progress bar *@
+            <div class="progress mb-3" style="height:14px; border-radius:7px;">
+                <div class="progress-bar @barClass"
+                     role="progressbar"
+                     style="width:@progressPct.ToString("F1")%; border-radius:7px;" />
+            </div>
+
+            @* Status alert *@
+            <div class="alert @alertClass mb-3 py-2">
+                <strong>@statusIcon</strong> @statusMessage
+            </div>
+
+            @* Outlook grid *@
+            <div class="outlook-grid">
+                @if (nextFreeDate.HasValue)
+                {
+                    <div class="outlook-item">
+                        <div class="outlook-value">@nextFreeDate.Value.ToString("d MMM")</div>
+                        <div class="outlook-label">Next day frees up</div>
+                    </div>
+                }
+                <div class="outlook-item">
+                    <div class="outlook-value">@availIn30</div>
+                    <div class="outlook-label">Available in 30 days</div>
+                </div>
+                <div class="outlook-item">
+                    <div class="outlook-value">@availIn60</div>
+                    <div class="outlook-label">Available in 60 days</div>
+                </div>
+                <div class="outlook-item">
+                    <div class="outlook-value">@availIn90</div>
+                    <div class="outlook-label">Available in 90 days</div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+
+    private bool hasTrips;
+    private int daysUsed, daysRemaining;
+    private double progressPct;
+    private DateTime? nextFreeDate;
+    private int availIn30, availIn60, availIn90;
+
+    private string barClass      = "bg-success";
+    private string alertClass    = "alert-success";
+    private string borderClass   = "";
+    private string usedColour    = "text-success";
+    private string remainingColour = "text-success";
+    private string statusIcon    = "✅";
+    private string statusMessage = "";
+
+    protected override void OnParametersSet()
+    {
+        hasTrips = Trips.Any();
+        if (!hasTrips) return;
+
+        var today = DateTime.Today;
+        var calc  = new SchengenCalc(Trips);
+
+        daysUsed      = calc.NumberOfDaysInAreaOnDay(today);
+        daysRemaining = 90 - daysUsed;
+        progressPct   = Math.Min(daysUsed / 90.0 * 100, 100);
+        nextFreeDate  = calc.NextDayFreeDate();
+        availIn30 = calc.DaysAvailableOnDate(today.AddDays(30));
+        availIn60 = calc.DaysAvailableOnDate(today.AddDays(60));
+        availIn90 = calc.DaysAvailableOnDate(today.AddDays(90));
+
+        // Thresholds: green ≤60, amber 61-75, orange 76-85, red 86-90, over >90
+        if (daysUsed == 0)
+        {
+            barClass = "bg-success"; alertClass = "alert-success";
+            borderClass = ""; usedColour = "text-success"; remainingColour = "text-success";
+            statusIcon = "✅"; statusMessage = "No days used yet.";
+        }
+        else if (daysUsed <= 60)
+        {
+            barClass = "bg-success"; alertClass = "alert-success";
+            borderClass = ""; usedColour = "text-success"; remainingColour = "text-success";
+            statusIcon = "✅"; statusMessage = $"You are well within the limit — {daysRemaining} days to spare.";
+        }
+        else if (daysUsed <= 75)
+        {
+            barClass = "bg-warning"; alertClass = "alert-warning";
+            borderClass = "border-warning"; usedColour = "text-warning"; remainingColour = "text-warning";
+            statusIcon = "⚠️"; statusMessage = $"You are using a significant portion of your allowance — {daysRemaining} days remaining.";
+        }
+        else if (daysUsed <= 90)
+        {
+            barClass = "bg-danger"; alertClass = "alert-danger";
+            borderClass = "border-danger"; usedColour = "text-danger"; remainingColour = "text-danger";
+            statusIcon = "🔴"; statusMessage = $"Warning: only {daysRemaining} day{(daysRemaining == 1 ? "" : "s")} remaining — close to the 90-day limit!";
+        }
+        else
+        {
+            barClass = "bg-danger"; alertClass = "alert-danger";
+            borderClass = "border-danger border-3"; usedColour = "text-danger"; remainingColour = "text-danger";
+            statusIcon = "❌"; statusMessage = $"You have exceeded the 90-day limit by {Math.Abs(daysRemaining)} day{(Math.Abs(daysRemaining) == 1 ? "" : "s")}!";
+        }
+    }
+}

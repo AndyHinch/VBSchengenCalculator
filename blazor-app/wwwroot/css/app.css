@@ -303,3 +303,176 @@ a, .btn-link {
 code {
     color: #c02d76;
 }
+
+/* ─── Profile bar ─── */
+.profile-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.profile-left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.profile-icon { font-size: 1.1rem; }
+.profile-select { min-width: 140px; max-width: 220px; }
+.profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+/* ─── Dashboard ─── */
+.dashboard-card { border-top: 4px solid #1a365d; }
+
+.dash-numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.dash-stat { display: flex; flex-direction: column; }
+.dash-big {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+.dash-label { font-size: 0.75rem; color: #6c757d; }
+.dash-divider { font-size: 2rem; color: #dee2e6; padding: 0 0.25rem; }
+.dash-spacer { flex: 1; }
+
+.outlook-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+}
+.outlook-item {
+    background: #f8f9fa;
+    border-radius: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+}
+.outlook-value { font-size: 1.1rem; font-weight: 600; color: #1a365d; }
+.outlook-label { font-size: 0.72rem; color: #6c757d; }
+
+/* ─── Statistics ─── */
+.stats-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.stat-pill {
+    flex: 1;
+    min-width: 90px;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    text-align: center;
+}
+.stat-pill-value { font-size: 1.4rem; font-weight: 700; color: #3730a3; }
+.stat-pill-label { font-size: 0.72rem; color: #6c757d; }
+
+.country-stats { display: flex; flex-direction: column; gap: 0.35rem; }
+.country-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.country-stat-name { min-width: 90px; }
+.country-stat-bar-wrap {
+    flex: 1;
+    background: #e9ecef;
+    border-radius: 4px;
+    height: 10px;
+    overflow: hidden;
+}
+.country-stat-bar {
+    height: 100%;
+    background: #1a365d;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.country-stat-days { min-width: 65px; text-align: right; color: #6c757d; }
+
+/* ─── Rules guide ─── */
+.rules-content h6 { color: #1a365d; margin-top: 1rem; }
+.rules-content h6:first-child { margin-top: 0.5rem; }
+.rules-example {
+    background: #eef2ff;
+    border-left: 4px solid #6366f1;
+    border-radius: 4px;
+    padding: 0.6rem 0.9rem;
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+}
+
+/* ─── Dark mode ─── */
+[data-theme="dark"] {
+    background-color: #1a1d23;
+    color: #e2e8f0;
+}
+[data-theme="dark"] html,
+[data-theme="dark"] body {
+    background-color: #1a1d23;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .app-header h1 { color: #90cdf4; }
+[data-theme="dark"] .card {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .card-title { color: #90cdf4; }
+[data-theme="dark"] .profile-bar {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+[data-theme="dark"] .outlook-item { background-color: #374151; }
+[data-theme="dark"] .outlook-value { color: #90cdf4; }
+[data-theme="dark"] .stat-pill { background: #312e81; border-color: #4338ca; }
+[data-theme="dark"] .stat-pill-value { color: #a5b4fc; }
+[data-theme="dark"] .rules-example { background: #312e81; border-color: #6366f1; }
+[data-theme="dark"] .country-chip { background: #312e81; border-color: #4338ca; color: #a5b4fc; }
+[data-theme="dark"] .trip-list,
+[data-theme="dark"] .predictions-list { border-color: #4a5568; background: #2d3748; }
+[data-theme="dark"] .trip-item { border-bottom-color: #4a5568; }
+[data-theme="dark"] .trip-item:hover { background: #374151; }
+[data-theme="dark"] .trip-item.selected { background: #1e3a5f; color: #90cdf4; }
+[data-theme="dark"] .trip-route { color: #94a3b8; }
+[data-theme="dark"] .country-stat-bar-wrap { background: #4a5568; }
+[data-theme="dark"] .country-stat-bar { background: #90cdf4; }
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: #374151;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .text-muted { color: #94a3b8 !important; }
+[data-theme="dark"] .dash-label { color: #94a3b8; }
+[data-theme="dark"] .dash-big { color: inherit; }
+
+/* ─── Print ─── */
+@media print {
+    .print-hide,
+    .profile-bar,
+    .app-header button,
+    .btn,
+    .modal-backdrop,
+    .mud-tabs-toolbar { display: none !important; }
+
+    .app-container { max-width: 100%; padding: 0; }
+
+    .card { break-inside: avoid; border: 1px solid #ccc !important; margin-bottom: 1rem; }
+
+    body { background: #fff !important; color: #000 !important; }
+}
