@@ -43,7 +43,9 @@ public class AuthService(HttpClient http, IJSRuntime js)
         if (!resp.IsSuccessStatusCode)
         {
             var err = await resp.Content.ReadFromJsonAsync<ErrorResponse>();
-            return err?.Message ?? "Registration failed.";
+            if (err?.Message is not null) return err.Message;
+            if (err?.Errors is not null) return string.Join(" ", err.Errors);
+            return "Registration failed.";
         }
         var auth = await resp.Content.ReadFromJsonAsync<AuthResponse>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
