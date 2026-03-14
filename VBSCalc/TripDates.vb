@@ -3,20 +3,18 @@
 Public Class TripDates
 
     Public Sub AddEntry(ByVal Ent As TripDate)
+        If Ent Is Nothing Then
+            Throw New ArgumentNullException(NameOf(Ent))
+        End If
         _entries.Add(Ent)
     End Sub
 
     Public Sub RemoveEntry(ByVal StartDate As Date)
-        Dim pred As Predicate(Of TripDate) = Function(ByVal entry As TripDate)
-                                                 Return (entry.StartDate = StartDate)
-                                             End Function
-        _entries.RemoveAll(pred)
+        _entries.RemoveAll(Function(entry) entry.StartDate = StartDate)
     End Sub
 
     Public Sub RemoveAll()
-
         _entries = New List(Of TripDate)
-
     End Sub
 
     Public ReadOnly Property Entries As IEnumerable(Of TripDate)
@@ -27,37 +25,38 @@ Public Class TripDates
 
     Private _entries As List(Of TripDate) = New List(Of TripDate)
 
-    Public Function MaxDate() As Date
-        Dim d As New Date(1900, 1, 1)
-        For Each t As TripDate In _entries
-            If t.EndDate > d Then
-                d = t.EndDate
+    Public Function MaxDate() As Date?
+        If Not _entries.Any() Then
+            Return Nothing
+        End If
+        Return _entries.Max(Function(t) t.EndDate)
+    End Function
+
+    Public Function MinDate() As Date?
+        If Not _entries.Any() Then
+            Return Nothing
+        End If
+        Return _entries.Min(Function(t) t.StartDate)
+    End Function
+
+    Public Function ToJson() As String
+        Return JsonConvert.SerializeObject(_entries)
+    End Function
+
+    Public Sub LoadFromJson(ByVal json As String)
+        If String.IsNullOrWhiteSpace(json) Then
+            Throw New ArgumentException("JSON data cannot be null or empty", NameOf(json))
+        End If
+
+        Try
+            Dim entries As List(Of TripDate) = JsonConvert.DeserializeObject(Of List(Of TripDate))(json)
+            If entries Is Nothing Then
+                Throw New InvalidOperationException("Failed to deserialize trip data")
             End If
-        Next
-        Return d
-    End Function
-
-    Public Function MinDate() As Date
-        Dim d As New Date(2999, 12, 31)
-        For Each t As TripDate In _entries
-            If t.StartDate < d Then
-                d = t.StartDate
-            End If
-        Next
-        Return d
-    End Function
-
-    Public Function toJson() As String
-        Dim jsonData As String = JsonConvert.SerializeObject(Me.Entries)
-        Return jsonData
-
-    End Function
-
-    Public Sub loadFromJson(ByVal json As String)
-
-        Dim Entries As List(Of TripDate) = JsonConvert.DeserializeObject(Of List(Of TripDate))(json)
-
-        _entries = Entries
+            _entries = entries
+        Catch ex As JsonException
+            Throw New InvalidOperationException("Invalid JSON format", ex)
+        End Try
     End Sub
 
 End Class
@@ -70,7 +69,6 @@ Public Class TripDate
     Public Property StartDate() As Date
         Get
             Return _StartDate
-
         End Get
         Set(value As Date)
             _StartDate = value
@@ -87,28 +85,23 @@ Public Class TripDate
     End Property
 
     Public Sub New(ByVal StartDate As Date, ByVal EndDate As Date)
+        If EndDate < StartDate Then
+            Throw New ArgumentException("End date cannot be before start date")
+        End If
         _StartDate = StartDate
         _EndDate = EndDate
     End Sub
 
     Public Function NumberOfDays() As Integer
-
         Return DateDiff(DateInterval.Day, _StartDate, _EndDate) + 1
-
     End Function
 
     Public Function WasInAreaOnDate(ByVal AreaDate As Date) As Boolean
-
-        If AreaDate >= StartDate And AreaDate <= EndDate Then
-            Return True
-        Else
-            Return False
-        End If
-
+        Return AreaDate >= StartDate AndAlso AreaDate <= EndDate
     End Function
 
     Public Overrides Function ToString() As String
-        Return "" & _StartDate.ToShortDateString & " to " & _EndDate.ToShortDateString & " (" & NumberOfDays.ToString & " days)"
+        Return $"{_StartDate.ToShortDateString} to {_EndDate.ToShortDateString} ({NumberOfDays} days)"
     End Function
 
 End Class

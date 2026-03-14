@@ -16,7 +16,7 @@ Imports System.Reflection
 <Assembly: System.Reflection.AssemblyCompanyAttribute("VBSCalc"),  _
  Assembly: System.Reflection.AssemblyConfigurationAttribute("Debug"),  _
  Assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0"),  _
- Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0"),  _
+ Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eccbde30068a2488d05005847d7d0371cbcc62b6"),  _
  Assembly: System.Reflection.AssemblyProductAttribute("VBSCalc"),  _
  Assembly: System.Reflection.AssemblyTitleAttribute("VBSCalc"),  _
  Assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")> 

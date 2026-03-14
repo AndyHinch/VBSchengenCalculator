@@ -33,3 +33,5 @@ E:\GitHub\AndyHinch\VBSchengenCalculator\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc
 E:\GitHub\AndyHinch\VBSchengenCalculator\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.pdb
 E:\GitHub\AndyHinch\VBSchengenCalculator\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.genruntimeconfig.cache
 E:\GitHub\AndyHinch\VBSchengenCalculator\VBSCalc\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+C:\Repos\Ahinch\VBSchengenCalculator\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.dll
+C:\Repos\Ahinch\VBSchengenCalculator\VBSCalc\obj\Debug\netcoreapp3.1\VBSCalc.pdb
