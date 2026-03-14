@@ -21,17 +21,8 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore Blazor
-      run: dotnet restore blazor-app/SchengenCalculator.csproj
-      
-    - name: Restore Core
-      run: dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
-      
-    - name: Restore API
-      run: dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
-      
-    - name: Restore Tests
-      run: dotnet restore tests/SchengenCalculator.Tests.csproj
+    - name: Restore CI solution (excludes MAUI)
+      run: dotnet restore VBSCalc.CI.sln
       
   build-and-test:
     name: Build and Test (Non-MAUI)
@@ -47,21 +38,14 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         
-    - name: Restore dependencies
-      run: |
-        dotnet restore blazor-app/SchengenCalculator.csproj
-        dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
-        dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
-        dotnet restore tests/SchengenCalculator.Tests.csproj
+    - name: Restore CI solution
+      run: dotnet restore VBSCalc.CI.sln
       
-    - name: Build projects
-      run: |
-        dotnet build blazor-app/SchengenCalculator.csproj --configuration Release --no-restore
-        dotnet build src/SchengenCalculator.Core/SchengenCalculator.Core.csproj --configuration Release --no-restore
-        dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj --configuration Release --no-restore
+    - name: Build CI solution
+      run: dotnet build VBSCalc.CI.sln --configuration Release --no-restore
       
     - name: Run tests
-      run: dotnet test tests/SchengenCalculator.Tests.csproj --configuration Release --no-restore --verbosity normal
+      run: dotnet test VBSCalc.CI.sln --configuration Release --no-build --verbosity normal
       
     - name: Publish Blazor WebAssembly
       run: dotnet publish blazor-app/SchengenCalculator.csproj --configuration Release --output ./publish/blazor

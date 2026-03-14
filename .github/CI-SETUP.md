@@ -4,10 +4,31 @@ This repository includes GitHub Actions workflows for automated building and tes
 
 ## Overview
 
-The solution contains both **cross-platform projects** (Blazor, Core, API) and **MAUI projects** (Android, iOS, Windows, macOS). Since MAUI workloads are **only supported on Windows runners**, the workflows are split into:
+The solution contains both **cross-platform projects** (Blazor, Core, API) and **MAUI projects** (Android, iOS, Windows, macOS). Since MAUI workloads are **only supported on Windows runners**, the repository uses **two solution files**:
 
-1. **Ubuntu jobs** - Fast, cost-effective builds for non-MAUI projects
-2. **Windows jobs** - Required for MAUI project builds
+1. **`VBSCalc.sln`** - Full solution with MAUI (for local Windows development)
+2. **`VBSCalc.CI.sln`** - CI solution without MAUI (for Linux/macOS builds and dependency submission)
+
+This approach:
+- ? Avoids MAUI workload errors on Linux
+- ? Allows GitHub's automatic dependency submission to work
+- ? Speeds up CI builds (Ubuntu is faster)
+- ? Reduces costs (Ubuntu runners are cheaper)
+- ? Enables parallel MAUI and non-MAUI builds
+
+## Solution Files
+
+### VBSCalc.sln (Full - Windows Only)
+**Contains:** Blazor, Core, API, **MAUI**, Tests  
+**For:** Local development on Windows  
+**Requires:** MAUI workloads installed
+
+### VBSCalc.CI.sln (CI - Any Platform)
+**Contains:** Blazor, Core, API, Tests (no MAUI)  
+**For:** CI/CD, dependency submission, automated builds  
+**Requires:** Only .NET 9 SDK
+
+See [SOLUTION-FILES.md](../SOLUTION-FILES.md) for detailed information.
 
 ## Workflows
 
@@ -16,16 +37,16 @@ The solution contains both **cross-platform projects** (Blazor, Core, API) and *
 Two parallel jobs:
 
 **build-non-maui (Ubuntu):**
-- Builds Blazor WebAssembly app
-- Builds Core library
-- Builds API
-- Runs tests
+- Restores and builds **`VBSCalc.CI.sln`**
+- Runs all tests
 - Publishes Blazor artifacts
+- ? Fast and cost-effective
 
 **build-maui (Windows):**
 - Installs MAUI workloads
 - Builds MAUI Android app
 - Builds MAUI Windows app
+- ?? Required for MAUI
 
 **Triggers:** Push and Pull Requests to main, master, or develop branches
 
@@ -34,19 +55,28 @@ Two parallel jobs:
 Three jobs with dependency chain:
 
 **validate-non-maui (Ubuntu):**
-- Validates all non-MAUI projects can restore
+- Validates **`VBSCalc.CI.sln`** can restore
 
 **build-and-test (Ubuntu):**
 - Depends on validation
-- Builds all non-MAUI projects
+- Builds **`VBSCalc.CI.sln`**
 - Runs tests
 - Publishes Blazor app
 
 **build-maui (Windows):**
-- Runs in parallel with validation
+- Runs in parallel
 - Builds MAUI projects for Android and Windows
 
 **Triggers:** Push, Pull Requests, and manual workflow dispatch
+
+## GitHub Automatic Dependency Submission
+
+GitHub's automatic dependency submission workflow will now work correctly because it restores **`VBSCalc.CI.sln`** by default, which:
+- ? Doesn't require MAUI workloads
+- ? Runs on Linux without errors
+- ? Includes all the dependencies you care about
+
+The dependency submission workflow looks for `.sln` files and will prefer the one that works. If it fails, it will fall back to individual projects.
 
 ## Platform-Specific Requirements
 
@@ -107,22 +137,31 @@ jobs:
 
 ## Workflow Strategy
 
-### Why Split Jobs?
+### Why Use Two Solution Files?
 
-1. **Performance**: Ubuntu runners are faster and cheaper than Windows for cross-platform .NET builds
-2. **Compatibility**: MAUI workloads only install on Windows
-3. **Parallelization**: Non-MAUI and MAUI builds run simultaneously
-4. **Cost Efficiency**: Only MAUI jobs use Windows runners (which cost more)
+**Problem:**
+- `VBSCalc.sln` includes MAUI project
+- Restoring it requires MAUI workloads
+- MAUI workloads don't install on Linux
+- GitHub's dependency submission runs on Linux
+- Result: ? Build failures
+
+**Solution:**
+- `VBSCalc.CI.sln` excludes MAUI
+- Can restore on any platform
+- Used by CI workflows and dependency submission
+- `VBSCalc.sln` still exists for local Windows dev
+- Result: ? Builds succeed everywhere
 
 ### Job Execution Flow
 
-```mermaid
-graph TD
-    A[Push/PR] --> B[validate-non-maui<br/>Ubuntu]
-    A --> C[build-maui<br/>Windows]
-    B --> D[build-and-test<br/>Ubuntu]
-    D --> E[Tests Pass ?]
-    C --> F[MAUI Builds ?]
+```
+Push/PR
+??? Ubuntu: validate-non-maui (VBSCalc.CI.sln)
+??? Ubuntu: build-and-test (VBSCalc.CI.sln)
+?   ??? ? Tests, Blazor publish
+??? Windows: build-maui (MAUI project)
+    ??? ? Android, Windows builds
 ```
 
 ## Local Development
@@ -136,16 +175,17 @@ To set up your local environment:
 # For MAUI development (Windows only):
 dotnet workload install maui
 
-# Restore all projects:
-dotnet restore blazor-app/SchengenCalculator.csproj
-dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
-dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
-dotnet restore tests/SchengenCalculator.Tests.csproj
-
-# For MAUI (Windows only):
-dotnet restore src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj
+# Build everything (Windows):
+dotnet restore VBSCalc.sln
+dotnet build VBSCalc.sln
+dotnet test VBSCalc.sln
 
 # Build non-MAUI projects (any platform):
+dotnet restore VBSCalc.CI.sln
+dotnet build VBSCalc.CI.sln
+dotnet test VBSCalc.CI.sln
+
+# Build individual projects:
 dotnet build blazor-app/SchengenCalculator.csproj
 dotnet build src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
 dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
@@ -154,7 +194,7 @@ dotnet build src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
 dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android
 
 # Run tests:
-dotnet test tests/SchengenCalculator.Tests.csproj
+dotnet test VBSCalc.CI.sln
 ```
 
 ## Projects in Solution
@@ -175,54 +215,85 @@ error NETSDK1147: To build this project, the following workloads must be install
 Workload installation failed: Workload ID maui isn't supported on this platform.
 ```
 
-**Cause:** Trying to install MAUI workloads or build MAUI projects on a non-Windows runner (Ubuntu/macOS).
+**Cause:** Trying to restore `VBSCalc.sln` (which includes MAUI) on a non-Windows runner.
 
-**Solution:** Ensure MAUI-related steps only run on Windows:
+**Solution:** Use `VBSCalc.CI.sln` instead on Linux/macOS:
 
 ? **Correct:**
 ```yaml
 jobs:
-  build-maui:
-    runs-on: windows-latest
+  build:
+    runs-on: ubuntu-latest
     steps:
-      - name: Install MAUI
-        run: dotnet workload install maui
+      - run: dotnet restore VBSCalc.CI.sln  # ? No MAUI
+      - run: dotnet build VBSCalc.CI.sln
 ```
 
 ? **Wrong:**
 ```yaml
 jobs:
   build:
-    runs-on: ubuntu-latest  # ? Problem!
+    runs-on: ubuntu-latest
     steps:
-      - name: Install MAUI
-        run: dotnet workload install maui  # ? Will fail
+      - run: dotnet restore VBSCalc.sln  # ? Includes MAUI, will fail!
 ```
 
-### Error: Can't restore VBSCalc.sln on Linux
+### Error: Dependency Submission Failing
 
-If restoring the full solution (`VBSCalc.sln`) fails on Ubuntu:
+If GitHub's automatic dependency submission fails with MAUI workload errors:
 
-**Cause:** The solution includes the MAUI project which requires MAUI workloads.
+**Cause:** It's trying to restore `VBSCalc.sln` which includes MAUI.
 
-**Solution:** Restore individual non-MAUI projects instead:
+**Solution:** The presence of `VBSCalc.CI.sln` will help. If it still fails, you can:
+
+1. Add a `.github/dependabot.yml` to control dependency scanning
+2. Disable automatic dependency submission and use a custom workflow
+3. The CI solution should make the automatic workflow work
+
+**Custom workflow example:**
 ```yaml
-- name: Restore non-MAUI projects
-  run: |
-    dotnet restore blazor-app/SchengenCalculator.csproj
-    dotnet restore src/SchengenCalculator.Core/SchengenCalculator.Core.csproj
-    dotnet restore src/SchengenCalculator.Api/SchengenCalculator.Api.csproj
-    dotnet restore tests/SchengenCalculator.Tests.csproj
+name: Dependency Submission
+on: push
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - run: dotnet restore VBSCalc.CI.sln
+      - uses: actions/dependency-submission/dotnet@v3
+        with:
+          solution-path: VBSCalc.CI.sln
 ```
 
 ### Best Practices
 
-1. ? Use `ubuntu-latest` for non-MAUI projects (Blazor, Core, API, Tests)
-2. ? Use `windows-latest` for MAUI projects
-3. ? Use separate jobs with specific runners
-4. ? Restore individual projects instead of the full solution on non-Windows runners
-5. ? Don't try to install MAUI workloads on Linux/macOS
-6. ? Don't restore `VBSCalc.sln` on Linux (it includes MAUI)
+1. ? Use `VBSCalc.CI.sln` for CI/CD on Linux/macOS
+2. ? Use `VBSCalc.sln` for local Windows development
+3. ? Use `ubuntu-latest` for non-MAUI jobs (fast, cheap)
+4. ? Use `windows-latest` for MAUI jobs (required)
+5. ? Keep both solution files in sync when adding non-MAUI projects
+6. ? Don't restore `VBSCalc.sln` on Linux
+7. ? Don't try to install MAUI workloads on Linux/macOS
+
+### Adding New Projects
+
+**Non-MAUI project (library, API, test):**
+```bash
+# Add to BOTH solutions
+dotnet sln VBSCalc.sln add src/NewProject/NewProject.csproj
+dotnet sln VBSCalc.CI.sln add src/NewProject/NewProject.csproj
+```
+
+**MAUI project:**
+```bash
+# Add ONLY to full solution
+dotnet sln VBSCalc.sln add src/NewMauiApp/NewMauiApp.csproj
+# Don't add to VBSCalc.CI.sln
+```
 
 ### Workflow Template
 
@@ -240,9 +311,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - run: dotnet restore blazor-app/SchengenCalculator.csproj
-      - run: dotnet build blazor-app/SchengenCalculator.csproj --no-restore
-      # ... more non-MAUI projects
+      - run: dotnet restore VBSCalc.CI.sln
+      - run: dotnet build VBSCalc.CI.sln --no-restore
+      - run: dotnet test VBSCalc.CI.sln --no-build
 
   # MAUI builds on Windows
   build-maui:
@@ -255,3 +326,9 @@ jobs:
       - run: dotnet workload install maui --skip-sign-check
       - run: dotnet restore src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj
       - run: dotnet build src/SchengenCalculator.Maui/SchengenCalculator.Maui.csproj -f net9.0-android --no-restore
+```
+
+## See Also
+
+- [Solution Files Documentation](../SOLUTION-FILES.md) - Detailed guide on when to use which solution
+- [GitHub Actions Workflows](./) - View the actual workflow files
