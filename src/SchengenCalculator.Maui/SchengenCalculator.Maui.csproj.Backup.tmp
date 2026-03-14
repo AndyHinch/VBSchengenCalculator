@@ -14,6 +14,12 @@
     <ApplicationId>com.andrewhinchcliffe.schengencalculator</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    
+    <!-- Resolve static web asset conflicts -->
+    <ResolveStaticWebAssetsInputsDependsOn>
+      RemoveConflictingStaticWebAssets;
+      $(ResolveStaticWebAssetsInputsDependsOn)
+    </ResolveStaticWebAssetsInputsDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,5 +41,16 @@
     <!-- Reuse all shared Razor components from the web project -->
     <ProjectReference Include="..\..\blazor-app\SchengenCalculator.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <Target Name="RemoveConflictingStaticWebAssets" BeforeTargets="ResolveStaticWebAssetsInputs">
+    <ItemGroup>
+      <!-- Remove index.html from referenced project's static web assets -->
+      <StaticWebAsset Remove="@(StaticWebAsset)" Condition="'%(SourceId)' == 'SchengenCalculator' AND '%(RelativePath)' == 'index.html'" />
+    </ItemGroup>
+  </Target>
 
 </Project>
