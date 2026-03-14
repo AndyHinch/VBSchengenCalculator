@@ -5,8 +5,18 @@
 
 <div class="app-container">
     <header class="app-header text-center py-4">
+        <div class="header-flags">🇬🇧 ✈️ 🇪🇺</div>
         <h1>Schengen Calculator</h1>
         <p class="text-muted">Track your 90-day / 180-day Schengen visa-free allowance</p>
+        <div class="country-chips">
+            <span class="country-chip">🇪🇸 Spain</span>
+            <span class="country-chip">🇫🇷 France</span>
+            <span class="country-chip">🇮🇹 Italy</span>
+            <span class="country-chip">🇩🇪 Germany</span>
+            <span class="country-chip">🇳🇱 Netherlands</span>
+            <span class="country-chip">🇵🇹 Portugal</span>
+            <span class="country-chip">+ 21 more</span>
+        </div>
     </header>
 
     <div class="row g-3 mb-3">
@@ -41,6 +51,7 @@
 {
     <TripForm InitialStart="formStart"
               InitialEnd="formEnd"
+              IsEdit="editingTrip is not null"
               OnSave="HandleFormSave"
               OnCancel="HideForm" />
 }

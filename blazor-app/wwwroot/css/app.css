@@ -10,7 +10,31 @@ html, body {
     padding: 0 1rem 2rem;
 }
 
-.app-header h1 { color: #1a365d; }
+.app-header h1 { color: #1a365d; font-size: 2rem; }
+
+.header-flags {
+    font-size: 2rem;
+    letter-spacing: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.country-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.country-chip {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 20px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.8rem;
+    color: #3730a3;
+    white-space: nowrap;
+}
 
 /* ─── Trip list ─── */
 .trip-list {
@@ -98,6 +122,40 @@ html, body {
 .cal-cell.selected:not(.today) { background: #cfe2ff; color: #084298; font-weight: 700; }
 .cal-cell.in-area:not(.today):not(.selected) { background: #d1e7dd; }
 
+/* ─── Calculator presets ─── */
+.preset-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.preset-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+/* ─── TripForm quick buttons ─── */
+.quick-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 0.35rem;
+}
+.quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.duration-badge {
+    display: inline-block;
+    background: #e8f4fd;
+    border: 1px solid #bee3f8;
+    border-radius: 6px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.875rem;
+    color: #1a365d;
+}
+
 /* ─── Modal ─── */
 .modal-backdrop {
     position: fixed;
@@ -115,6 +173,11 @@ html, body {
     padding: 2rem;
     width: 320px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.trip-form-box {
+    width: 560px;
+    max-width: 95vw;
 }
 
 .modal-box h2 {
