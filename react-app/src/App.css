@@ -1,0 +1,320 @@
+/* ─── Reset & base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #222;
+  min-height: 100vh;
+}
+
+/* ─── App shell ─── */
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+}
+
+.app-header {
+  text-align: center;
+  padding: 2rem 0 1.5rem;
+}
+
+.app-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a365d;
+}
+
+.subtitle {
+  margin-top: 0.25rem;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* ─── Layout ─── */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.top-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .top-panel { grid-template-columns: 1fr; }
+}
+
+/* ─── Cards ─── */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1a365d;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: #f7f8fa; border-color: #a0aec0; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary {
+  background: #2b6cb0;
+  border-color: #2b6cb0;
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) { background: #2c5282; border-color: #2c5282; }
+
+.btn-danger {
+  background: #e53e3e;
+  border-color: #e53e3e;
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) { background: #c53030; border-color: #c53030; }
+
+.btn-icon {
+  font-size: 1.4rem;
+  padding: 0.2rem 0.6rem;
+  line-height: 1;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* ─── Trip list ─── */
+.trip-list-card { display: flex; flex-direction: column; }
+
+.trip-list {
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 0;
+}
+
+.trip-list-empty {
+  padding: 0.6rem 0.75rem;
+  color: #999;
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+.trip-item {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.1s;
+}
+.trip-item:last-child { border-bottom: none; }
+.trip-item:hover { background: #f7f8fa; }
+.trip-item.selected { background: #ebf4ff; color: #2b6cb0; font-weight: 600; }
+
+/* ─── Calculator section ─── */
+.calc-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.calc-row label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.calc-row input[type="date"] {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.calc-result {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.result-ok  { background: #c6f6d5; color: #276749; }
+.result-over { background: #fed7d7; color: #9b2c2c; }
+
+/* ─── Predictions ─── */
+.predictions-list {
+  list-style: none;
+  margin-top: 0.75rem;
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.predictions-list li {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+.predictions-list li:last-child { border-bottom: none; }
+
+.pred-ok   { color: #276749; }
+.pred-over { color: #9b2c2c; font-weight: 600; }
+
+.pred-date { font-weight: 600; }
+
+/* ─── Calendar ─── */
+.calendar-card { }
+
+.calendar-hint {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.calendar-month-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day-name {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #888;
+  padding: 0.25rem 0;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.calendar-cell.empty { cursor: default; }
+.calendar-cell:not(.empty):hover { background: #ebf4ff; }
+.calendar-cell.today {
+  background: #2b6cb0;
+  color: #fff;
+  font-weight: 700;
+}
+.calendar-cell.selected:not(.today) {
+  background: #bee3f8;
+  color: #2b6cb0;
+  font-weight: 700;
+}
+
+/* ─── Modal ─── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.modal h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1a365d;
+  margin-bottom: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.form-row label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.form-row input[type="date"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
+.error {
+  color: #e53e3e;
+  font-size: 0.85rem;
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+}
