@@ -4,3 +4,8 @@ _ReSharper.*
 bin
 obj
 packages
+
+# SQLite dev databases
+*.db
+*.db-shm
+*.db-wal
