@@ -1,0 +1,317 @@
+@page "/"
+@inject IJSRuntime JSRuntime
+@inject ProfileService ProfileService
+@inject AuthService AuthService
+@inject TripApiService TripApiService
+@implements IDisposable
+
+<PageTitle>Schengen Calculator</PageTitle>
+
+<div class="app-container">
+
+    @* ── Auth bar ── *@
+    <AuthBar OnShowAuth="() => showAuthModal = true" />
+
+    @* ── Trip limit banner ── *@
+    <TripLimitBanner TripCount="trips.Count" OnRegisterClick="() => showAuthModal = true" />
+
+    @* ── Auth modal ── *@
+    <AuthModal Visible="showAuthModal" OnClose="HandleAuthClosed" />
+
+    @* ── Profile bar ── *@
+    <ProfileSwitcher OnIcalExport="ExportIcal" OnPrint="PrintSummary" />
+
+    @* ── Header ── *@
+    <header class="app-header text-center py-3">
+        <div class="header-flags">🇬🇧 ✈️ 🇪🇺</div>
+        <h1>Schengen Calculator</h1>
+        <p class="text-muted">Track your 90-day / 180-day Schengen visa-free allowance</p>
+        <div class="country-chips">
+            <span class="country-chip">🇪🇸 Spain</span>
+            <span class="country-chip">🇫🇷 France</span>
+            <span class="country-chip">🇮🇹 Italy</span>
+            <span class="country-chip">🇩🇪 Germany</span>
+            <span class="country-chip">🇳🇱 Netherlands</span>
+            <span class="country-chip">🇵🇹 Portugal</span>
+            <span class="country-chip">+ 21 more</span>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mt-2" @onclick="ToggleDark">
+            @(isDark ? "☀️ Light mode" : "🌙 Dark mode")
+        </button>
+    </header>
+
+    @* ── Dashboard ── *@
+    <div class="mb-3">
+        <Dashboard Trips="trips" />
+    </div>
+
+    @* ── Trips + Calendar ── *@
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <TripList Trips="trips"
+                      OnAdd="ShowAddForm"
+                      OnEdit="ShowEditForm"
+                      OnDelete="DeleteTrip"
+                      OnClearAll="ClearAllTrips"
+                      OnSave="SaveToFile"
+                      OnLoadJson="LoadFromJson" />
+        </div>
+        <div class="col-md-6">
+            <CalendarView Trips="trips" />
+        </div>
+    </div>
+
+    @* ── Travel Planner ── *@
+    <div class="mb-3">
+        <TravelPlanner Trips="trips" />
+    </div>
+
+    @* ── Calculator ── *@
+    <div class="mb-3">
+        <Calculator Trips="trips" />
+    </div>
+
+    @* ── Statistics ── *@
+    <div class="mb-3">
+        <TripStatistics Trips="trips" />
+    </div>
+
+    @* ── Predictions ── *@
+    <div class="mb-3">
+        <Predictions Trips="trips" />
+    </div>
+
+    @* ── Rules guide ── *@
+    <div class="mb-3">
+        <RulesGuide />
+    </div>
+
+    <footer class="text-center text-muted py-3 print-hide">
+        <small>© @DateTime.Now.Year Andrew Hinchcliffe — MIT License</small>
+    </footer>
+</div>
+
+@if (showForm)
+{
+    <TripForm InitialStart="formStart"
+              InitialEnd="formEnd"
+              IsEdit="editingTrip is not null"
+              InitialDepartureCode="editingTrip?.DepartureAirport"
+              InitialArrivalCode="editingTrip?.ArrivalAirport"
+              OnSave="HandleFormSave"
+              OnCancel="HideForm" />
+}
+
+@code {
+    private List<TripDate> trips = [];
+    private bool showForm;
+    private bool showAuthModal;
+    private TripDate? editingTrip;
+    private DateTime formStart = DateTime.Today;
+    private DateTime formEnd = DateTime.Today.AddDays(14);
+    private bool isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await AuthService.InitialiseAsync();
+
+        if (AuthService.IsAuthenticated)
+        {
+            trips = await TripApiService.GetTripsAsync();
+        }
+        else
+        {
+            await ProfileService.EnsureInitialisedAsync();
+            trips = ProfileService.ActiveProfile?.Trips ?? [];
+        }
+
+        var theme = await JSRuntime.InvokeAsync<string>("getTheme");
+        isDark = theme == "dark";
+
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        ProfileService.OnChanged += HandleProfileChanged;
+        AuthService.OnAuthChanged += HandleAuthChanged;
+    }
+
+    private void HandleAuthChanged()
+    {
+        InvokeAsync(async () =>
+        {
+            if (AuthService.IsAuthenticated)
+                trips = await TripApiService.GetTripsAsync();
+            else
+            {
+                await ProfileService.EnsureInitialisedAsync();
+                trips = ProfileService.ActiveProfile?.Trips ?? [];
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async Task HandleAuthClosed()
+    {
+        showAuthModal = false;
+        if (AuthService.IsAuthenticated)
+            trips = await TripApiService.GetTripsAsync();
+        StateHasChanged();
+    }
+
+    private void HandleProfileChanged()
+    {
+        trips = ProfileService.ActiveProfile?.Trips ?? [];
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        ProfileService.OnChanged -= HandleProfileChanged;
+        AuthService.OnAuthChanged -= HandleAuthChanged;
+    }
+
+    private async Task PersistTrips()
+    {
+        if (AuthService.IsAuthenticated) return; // API handles persistence
+        await ProfileService.SaveTripsAsync(trips);
+    }
+
+    // ── Dark mode ──────────────────────────────────────────────────────────
+
+    private async Task ToggleDark()
+    {
+        isDark = !isDark;
+        await JSRuntime.InvokeVoidAsync("setTheme", isDark);
+    }
+
+    // ── Trip CRUD ──────────────────────────────────────────────────────────
+
+    private void ShowAddForm()
+    {
+        if (trips.Count >= AuthService.TripLimit)
+        {
+            showAuthModal = !AuthService.IsAuthenticated;
+            return;
+        }
+        editingTrip = null;
+        formStart = DateTime.Today;
+        formEnd = DateTime.Today.AddDays(14);
+        showForm = true;
+    }
+
+    private void ShowEditForm(TripDate trip)
+    {
+        editingTrip = trip;
+        formStart = trip.StartDate;
+        formEnd = trip.EndDate;
+        showForm = true;
+    }
+
+    private async Task HandleFormSave(
+        (DateTime Start, DateTime End, string? DepCode, string? ArrCode, string? Country) result)
+    {
+        var newTrip = new TripDate(result.Start, result.End, result.DepCode, result.ArrCode, result.Country);
+
+        if (AuthService.IsAuthenticated)
+        {
+            if (editingTrip?.ApiId is Guid existingId)
+            {
+                await TripApiService.UpdateTripAsync(existingId, newTrip);
+                trips.RemoveAll(t => t.ApiId == existingId);
+                newTrip.ApiId = existingId;
+            }
+            else
+            {
+                var saved = await TripApiService.AddTripAsync(newTrip);
+                if (saved is not null) newTrip = saved;
+            }
+        }
+        else
+        {
+            if (editingTrip is not null)
+                trips.RemoveAll(t => t.StartDate == editingTrip.StartDate);
+        }
+
+        trips.Add(newTrip);
+        trips = [.. trips.OrderBy(t => t.StartDate)];
+        showForm = false;
+        editingTrip = null;
+        await PersistTrips();
+    }
+
+    private void HideForm() { showForm = false; editingTrip = null; }
+
+    private async Task DeleteTrip(TripDate trip)
+    {
+        if (AuthService.IsAuthenticated && trip.ApiId.HasValue)
+            await TripApiService.DeleteTripAsync(trip.ApiId.Value);
+        trips.RemoveAll(t => t.StartDate == trip.StartDate);
+        await PersistTrips();
+    }
+
+    private async Task ClearAllTrips()
+    {
+        if (AuthService.IsAuthenticated)
+            await TripApiService.DeleteAllTripsAsync();
+        trips.Clear();
+        await PersistTrips();
+    }
+
+    // ── File save / load ───────────────────────────────────────────────────
+
+    private async Task SaveToFile()
+    {
+        var td = new TripDates();
+        foreach (var t in trips) td.AddEntry(t);
+        await JSRuntime.InvokeVoidAsync("downloadFile", "trips.tripdata", td.ToJson(), "application/json");
+    }
+
+    private async Task LoadFromJson(string json)
+    {
+        try
+        {
+            var td = new TripDates();
+            td.LoadFromJson(json);
+            trips = [.. td.Entries];
+            await PersistTrips();
+        }
+        catch { }
+    }
+
+    // ── iCal export ────────────────────────────────────────────────────────
+
+    private async Task ExportIcal(string? _)
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("BEGIN:VCALENDAR");
+        sb.AppendLine("VERSION:2.0");
+        sb.AppendLine("PRODID:-//Schengen Calculator//EN");
+        sb.AppendLine("CALSCALE:GREGORIAN");
+
+        foreach (var trip in trips.OrderBy(t => t.StartDate))
+        {
+            var summary = string.IsNullOrEmpty(trip.ArrivalAirport)
+                ? "Schengen Trip"
+                : $"Schengen — {trip.ArrivalAirport}{(string.IsNullOrEmpty(trip.Country) ? "" : $", {trip.Country}")}";
+
+            sb.AppendLine("BEGIN:VEVENT");
+            sb.AppendLine($"UID:{Guid.NewGuid()}@schengen-calculator");
+            sb.AppendLine($"DTSTART;VALUE=DATE:{trip.StartDate:yyyyMMdd}");
+            sb.AppendLine($"DTEND;VALUE=DATE:{trip.EndDate.AddDays(1):yyyyMMdd}");
+            sb.AppendLine($"SUMMARY:{summary}");
+            sb.AppendLine($"DESCRIPTION:{trip.NumberOfDays()} days in Schengen Area");
+            sb.AppendLine("END:VEVENT");
+        }
+
+        sb.AppendLine("END:VCALENDAR");
+        await JSRuntime.InvokeVoidAsync("downloadFile", "schengen-trips.ics", sb.ToString(), "text/calendar");
+    }
+
+    // ── Print ──────────────────────────────────────────────────────────────
+
+    private async Task PrintSummary() => await JSRuntime.InvokeVoidAsync("printPage");
+}

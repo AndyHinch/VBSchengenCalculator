@@ -1,0 +1,62 @@
+<div class="card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center"
+             style="cursor:pointer;" @onclick="Toggle">
+            <h5 class="card-title mb-0">📖 How the Schengen 90/180 Rule Works</h5>
+            <span>@(expanded ? "▲" : "▼")</span>
+        </div>
+
+        @if (expanded)
+        {
+            <hr />
+            <div class="rules-content">
+                <h6>The Basic Rule</h6>
+                <p>
+                    As a UK citizen travelling visa-free, you may spend a maximum of
+                    <strong>90 days in any 180-day period</strong> within the Schengen Area.
+                    This is <em>not</em> a fixed six-month block — it is a rolling window that
+                    recalculates every day.
+                </p>
+
+                <h6>How the Rolling Window Works</h6>
+                <p>
+                    On any given day, the rule looks back exactly 180 days and counts every day
+                    you were present in the Schengen Area during that window. If the total is
+                    90 or fewer, you are within the limit.
+                </p>
+                <div class="rules-example">
+                    <strong>Example:</strong> If today is 1 July 2025, the calculator counts all
+                    days you spent in Schengen from 2 January 2025 to 1 July 2025. As each day
+                    passes, old trip days drop off the back of the window and free up allowance.
+                </div>
+
+                <h6>Common Misconceptions</h6>
+                <ul>
+                    <li><strong>It does not reset on 1 January.</strong> The window is always the 180 days before today.</li>
+                    <li><strong>Both entry and exit days count.</strong> A trip from Mon to Fri is 5 days, not 3.</li>
+                    <li><strong>It applies across all Schengen countries combined.</strong>
+                        A week in Spain followed by a week in France is 14 days total, not 7.</li>
+                    <li><strong>Exceeding 90 days is a serious offence</strong> — you may be denied entry,
+                        fined, or banned from re-entry for a period.</li>
+                </ul>
+
+                <h6>Which Countries are in the Schengen Area?</h6>
+                <p>
+                    Austria, Belgium, Croatia, Czech Republic, Denmark, Estonia, Finland, France,
+                    Germany, Greece, Hungary, Iceland, Italy, Latvia, Liechtenstein, Lithuania,
+                    Luxembourg, Malta, Netherlands, Norway, Poland, Portugal, Slovakia, Slovenia,
+                    Spain, Sweden, Switzerland.
+                </p>
+                <p class="mb-0">
+                    <strong>Not in Schengen:</strong> Ireland, Cyprus, Bulgaria, Romania — and of
+                    course the UK itself.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool expanded;
+    private void Toggle() => expanded = !expanded;
+}

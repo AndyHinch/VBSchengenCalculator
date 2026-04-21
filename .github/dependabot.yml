@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # Enable version updates for .NET dependencies
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Use the CI solution for dependency analysis
+    # This avoids MAUI workload issues on Linux
+    ignore:
+      # Don't update MAUI packages automatically (handled separately)
+      - dependency-name: "Microsoft.Maui.*"
+      - dependency-name: "Microsoft.AspNetCore.Components.WebView.Maui"
+    groups:
+      # Group .NET SDK updates together
+      dotnet-sdk:
+        patterns:
+          - "Microsoft.NET.Sdk*"
+      # Group ASP.NET Core updates together
+      aspnetcore:
+        patterns:
+          - "Microsoft.AspNetCore.*"
+      # Group Entity Framework updates together
+      entityframework:
+        patterns:
+          - "Microsoft.EntityFrameworkCore.*"
+      # Group test packages together
+      testing:
+        patterns:
+          - "Microsoft.NET.Test.Sdk"
+          - "xunit*"
+          - "coverlet.*"

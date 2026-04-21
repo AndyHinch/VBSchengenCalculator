@@ -1,0 +1,81 @@
+<div class="card h-100">
+    <div class="card-body d-flex flex-column">
+        <h5 class="card-title">Trips</h5>
+
+        <ul class="trip-list flex-grow-1">
+            @if (!Trips.Any())
+            {
+                <li class="trip-list-empty">No trips added yet.</li>
+            }
+            @foreach (var trip in Trips.OrderBy(t => t.StartDate))
+            {
+                <li class="trip-item @(selected == trip ? "selected" : "")"
+                    @onclick="() => selected = trip">
+                    <span class="trip-dates">@trip.ToString()</span>
+                    @if (!string.IsNullOrEmpty(trip.RouteDisplay))
+                    {
+                        <span class="trip-route">@trip.RouteDisplay</span>
+                    }
+                </li>
+            }
+        </ul>
+
+        <div class="btn-group-row mt-2">
+            <button class="btn btn-primary btn-sm" @onclick="() => OnAdd.InvokeAsync()">Add</button>
+            <button class="btn btn-secondary btn-sm" @onclick="HandleEdit" disabled="@(selected is null)">Edit</button>
+            <button class="btn btn-danger btn-sm" @onclick="HandleDelete" disabled="@(selected is null)">Delete</button>
+            <button class="btn btn-danger btn-sm" @onclick="HandleClearAll">Clear All</button>
+        </div>
+
+        <div class="btn-group-row mt-2">
+            <button class="btn btn-outline-secondary btn-sm" @onclick="() => OnSave.InvokeAsync()" disabled="@(!Trips.Any())">
+                Save (.tripdata)
+            </button>
+            <label class="btn btn-outline-secondary btn-sm mb-0">
+                Load (.tripdata)
+                <InputFile OnChange="HandleFileLoad" accept=".tripdata,.json" style="display:none" />
+            </label>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<TripDate> Trips { get; set; } = [];
+    [Parameter] public EventCallback OnAdd { get; set; }
+    [Parameter] public EventCallback<TripDate> OnEdit { get; set; }
+    [Parameter] public EventCallback<TripDate> OnDelete { get; set; }
+    [Parameter] public EventCallback OnClearAll { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback<string> OnLoadJson { get; set; }
+
+    private TripDate? selected;
+
+    private async Task HandleEdit()
+    {
+        if (selected is not null)
+            await OnEdit.InvokeAsync(selected);
+    }
+
+    private async Task HandleDelete()
+    {
+        if (selected is not null)
+        {
+            await OnDelete.InvokeAsync(selected);
+            selected = null;
+        }
+    }
+
+    private async Task HandleClearAll()
+    {
+        selected = null;
+        await OnClearAll.InvokeAsync();
+    }
+
+    private async Task HandleFileLoad(InputFileChangeEventArgs e)
+    {
+        using var stream = e.File.OpenReadStream();
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
+        await OnLoadJson.InvokeAsync(json);
+    }
+}

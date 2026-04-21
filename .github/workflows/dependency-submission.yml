@@ -1,0 +1,37 @@
+name: Dependency Submission
+
+on:
+  push:
+    branches: [ main, master, develop ]
+
+permissions:
+  contents: write
+
+jobs:
+  submit-dependencies:
+    name: Submit Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install MAUI workload
+      run: dotnet workload install maui-android --skip-sign-check
+
+    - name: Restore solution (excludes MAUI)
+      run: dotnet restore VBSCalc.sln
+      
+    - name: Generate dependency graph
+      run: dotnet list VBSCalc.sln package --include-transitive --format json > dependencies.json
+      
+    - name: Upload dependency graph
+      uses: actions/upload-artifact@v4
+      with:
+        name: dependency-graph
+        path: dependencies.json

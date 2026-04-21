@@ -1,0 +1,16 @@
+{
+  "name": "Schengen Calculator",
+  "short_name": "Schengen",
+  "description": "Track your 90/180-day Schengen visa-free allowance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a365d",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ]
+}

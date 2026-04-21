@@ -1,0 +1,92 @@
+@inject ProfileService ProfileService
+
+<div class="profile-bar">
+    <div class="profile-left">
+        <span class="profile-icon">👤</span>
+        <select class="form-select form-select-sm profile-select"
+                value="@ProfileService.ActiveProfile?.Id"
+                @onchange="HandleSwitch">
+            @foreach (var p in ProfileService.Profiles)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="profile-actions">
+        @if (!addingProfile && !renamingProfile)
+        {
+            <button class="btn btn-sm btn-outline-secondary" @onclick="StartRename"
+                    title="Rename this profile">✏️</button>
+            <button class="btn btn-sm btn-outline-primary" @onclick="StartAdd"
+                    title="Add a new traveller">＋ Add</button>
+            @if (ProfileService.Profiles.Count > 1)
+            {
+                <button class="btn btn-sm btn-outline-danger" @onclick="DeleteProfile"
+                        title="Delete this profile">🗑</button>
+            }
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ExportIcal"
+                    title="Export trips to calendar">📅 iCal</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="PrintSummary"
+                    title="Print summary">🖨 Print</button>
+        }
+
+        @if (addingProfile)
+        {
+            <input class="form-control form-control-sm" style="width:140px;"
+                   placeholder="New name" @bind="newName" />
+            <button class="btn btn-sm btn-primary" @onclick="ConfirmAdd">Add</button>
+            <button class="btn btn-sm btn-secondary" @onclick="CancelInput">Cancel</button>
+        }
+
+        @if (renamingProfile)
+        {
+            <input class="form-control form-control-sm" style="width:140px;"
+                   @bind="newName" />
+            <button class="btn btn-sm btn-primary" @onclick="ConfirmRename">Save</button>
+            <button class="btn btn-sm btn-secondary" @onclick="CancelInput">Cancel</button>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string?> OnIcalExport { get; set; }
+    [Parameter] public EventCallback OnPrint { get; set; }
+
+    private bool addingProfile;
+    private bool renamingProfile;
+    private string newName = "";
+
+    private async Task HandleSwitch(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        if (!string.IsNullOrEmpty(id))
+            await ProfileService.SwitchProfileAsync(id);
+    }
+
+    private void StartAdd()     { addingProfile  = true; newName = ""; }
+    private void StartRename()  { renamingProfile = true; newName = ProfileService.ActiveProfile?.Name ?? ""; }
+    private void CancelInput()  { addingProfile = renamingProfile = false; newName = ""; }
+
+    private async Task ConfirmAdd()
+    {
+        if (!string.IsNullOrWhiteSpace(newName))
+            await ProfileService.AddProfileAsync(newName);
+        CancelInput();
+    }
+
+    private async Task ConfirmRename()
+    {
+        if (!string.IsNullOrWhiteSpace(newName))
+            await ProfileService.RenameActiveAsync(newName);
+        CancelInput();
+    }
+
+    private async Task DeleteProfile()
+    {
+        await ProfileService.DeleteActiveAsync();
+    }
+
+    private async Task ExportIcal()  => await OnIcalExport.InvokeAsync(ProfileService.ActiveProfile?.Id);
+    private async Task PrintSummary() => await OnPrint.InvokeAsync();
+}

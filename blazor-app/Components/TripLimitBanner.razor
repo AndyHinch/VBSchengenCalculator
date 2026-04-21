@@ -1,0 +1,39 @@
+@inject AuthService AuthService
+
+@if (ShouldShow)
+{
+    <div class="alert @alertClass trip-limit-banner">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span>
+                @if (AuthService.IsAuthenticated)
+                {
+                    <strong>@icon You have reached your @AuthService.TripLimit-trip limit.</strong>
+                    @: Upgrade to unlimited trips.
+                }
+                else
+                {
+                    <strong>@icon You have reached the @AuthService.TripLimit-trip free limit.</strong>
+                    @: Create a free account for up to 10 trips + cloud sync.
+                }
+            </span>
+            @if (!AuthService.IsAuthenticated)
+            {
+                <button class="btn btn-sm btn-primary" @onclick="OpenAuth">
+                    Create Free Account
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int TripCount { get; set; }
+    [Parameter] public EventCallback OnRegisterClick { get; set; }
+
+    private bool ShouldShow => TripCount >= AuthService.TripLimit;
+
+    private string alertClass => AuthService.IsAuthenticated ? "alert-warning" : "alert-info";
+    private string icon       => AuthService.IsAuthenticated ? "⚠️" : "ℹ️";
+
+    private async Task OpenAuth() => await OnRegisterClick.InvokeAsync();
+}
